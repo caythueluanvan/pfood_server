@@ -17,7 +17,7 @@ const Service = {
         catch (err) {
          
         }
-      return conn;
+      return conn
     },
     closeConn: conn => {
       if (conn) {
@@ -49,5 +49,6 @@ const Service = {
         }
       })
     }
+
   }
   module.exports = Service
