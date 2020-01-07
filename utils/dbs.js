@@ -29,14 +29,14 @@ const Service = {
         }
       }
     },
-    execute: (sql) => {
+    execute: (sql, bind) => {
       return new Promise(async (resolve, reject) => {
         let conn
         try 
         {
           conn = Service.getConn();
           
-          conn.query(sql, function (error, results) {
+          conn.query(sql, bind, function (error, results) {
             if (error) reject(error);
             resolve(results)
           });
