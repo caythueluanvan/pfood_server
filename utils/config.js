@@ -4,7 +4,7 @@ module.exports = {
     password: '123456a@',
     database: 'pfood',
     secret: 'secret',
-    expires: '18000'
+    expires: 18000
     // host: 'db4free.net',
     // user: 'administrator_ex',
     // password: 'Temp@1234',

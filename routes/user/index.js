@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const dbs = require('../utils/dbs');
-const { check, validationResult } = require('express-validator');
+const dbs = require('../../utils/dbs');
+const { check, validationResult, body } = require('express-validator');
 const bcrypt = require('bcrypt');
-
+const privateRouteUser = require('./userprivate');
 /* Add User */
 router.post('/', [
     check('name', 'Name field is required').notEmpty(),
@@ -11,7 +11,25 @@ router.post('/', [
     check('mail', 'Email is not valid').isEmail(),
     check('username', 'Username field is required').notEmpty(),
     check('pass', 'Password field is required').notEmpty(),
-    check('pass', 'Password field is min 5 character').isLength({ min: 5 })
+    check('pass', 'Password field is min 5 character').isLength({ min: 5 }),
+    body('mail').custom(async value => {
+        let user = await dbs.execute('select * from customer where CustomerEmail = ?', [value])
+        if (user[0]) {
+            return Promise.reject('E-mail already in use');
+        }
+    }),
+    body('username').custom(async value => {
+        let user = await dbs.execute('select * from customer where CustomerUsername = ?', [value])
+        if (user[0]) {
+            return Promise.reject('Username already in use');
+        }
+    }),
+    body('pass2').custom((value, { req }) => {
+        if (value !== req.body.pass) {
+            throw new Error('Password confirmation does not match password');
+        }
+        return true;
+    })  
 ], async (req, res) => {
 
     try {
@@ -31,7 +49,7 @@ router.post('/', [
         res.json(rs)
 
     } catch (error) {
-        console.log(error);
+        //console.log(error);
         res.json({ err: 'error' });
     }
 
@@ -39,7 +57,9 @@ router.post('/', [
 
 /* Edit User */
 router.put('/', (req, res) => {
-    
+
 });
+
+privateRouteUser(router);
 
 module.exports = router;

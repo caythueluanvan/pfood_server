@@ -1,8 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const dbs = require('../utils/dbs');
-const jwt = require('jsonwebtoken');
-const config = require('../utils/config');
+const dbs = require('../../utils/dbs');
+const { check, validationResult } = require('express-validator');
 /* Authentication */
 router.use(async (req, res, next) => {
     try {
@@ -18,10 +17,8 @@ router.use(async (req, res, next) => {
     }
 });
 
-/* Get All User */
-router.get('/data', async (req, res) => {
-    let rs = await dbs.execute('select * from customer');
-    res.json(rs);
+/* */
+router.get('/', (req, res) => {
 });
 
 module.exports = router;

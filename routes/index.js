@@ -24,7 +24,8 @@ router.post('/signin', async function (req, res) {
     if (user[0]) {
       let rs = bcrypt.compareSync(password, user[0].CustomerPassword);      
       if (rs) {
-        var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires*1000 });
+        delete user[0].CustomerPassword;
+        var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
         res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000) });
       } else {
         res.status(401).send({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
