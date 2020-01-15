@@ -12,10 +12,17 @@ router.post('/', [
     check('username', 'Username field is required').notEmpty(),
     check('pass', 'Password field is required').notEmpty(),
     check('pass', 'Password field is min 5 character').isLength({ min: 5 }),
+    check('phone', 'Password field is min 10 character').isLength({ min: 10 }),
     body('mail').custom(async value => {
         let user = await dbs.execute('select * from customer where CustomerEmail = ?', [value])
         if (user[0]) {
             return Promise.reject('E-mail already in use');
+        }
+    }),
+    body('phone').custom(async value => {
+        let user = await dbs.execute('select * from customer where CustomerPhone = ?', [value])
+        if (user[0]) {
+            return Promise.reject('Phone number already in use');
         }
     }),
     body('username').custom(async value => {
@@ -35,19 +42,19 @@ router.post('/', [
     try {
         // Check Errors
         const errors = validationResult(req);
-        if (!errors.isEmpty()) {
+        if (!errors.isEmpty()) {            
             res.status(422).json({ errors: errors.array() });
+        } else {
+            const saltRounds = 10;
+            let salt = bcrypt.genSaltSync(saltRounds);
+            let pass = bcrypt.hashSync(req.body.pass, salt);
+            let sql = `insert into customer(CustomerID, CustomerName, CustomerUsername, CustomerPassword, 
+                    CustomerAddress, CustomerPhone, CustomerEmail, StatusID) values(?, ?, ?, ?, ?, ?, ?, ?)`;
+            let customerID = await dbs.getNextID('customer','customerid');        
+            let bind = [customerID, req.body.name, req.body.username, pass, req.body.address, req.body.phone, req.body.mail, 1];
+            let rs = await dbs.execute(sql, bind);
+            res.json(rs)
         }
-
-        const saltRounds = 10;
-        let salt = bcrypt.genSaltSync(saltRounds);
-        let pass = bcrypt.hashSync(req.body.pass, salt);
-        let sql = `insert into customer(CustomerID, CustomerName, CustomerUsername, CustomerPassword, 
-                CustomerAddress, CustomerPhone, CustomerEmail, StatusID) values(?, ?, ?, ?, ?, ?, ?, ?)`;
-        let bind = ['A', req.body.name, req.body.username, pass, req.body.address, req.body.phone, req.body.mail, 1];
-        let rs = await dbs.execute(sql, bind);
-        res.json(rs)
-
     } catch (error) {
         //console.log(error);
         res.json({ err: 'error' });

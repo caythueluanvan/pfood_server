@@ -11,7 +11,7 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/test', async (req, res, next) => {
-  let rs = await dbs.execute('select * from customer where CustomerUsername = ?',['quocvc']);
+  let rs = await dbs.getNextID('customer','customerid');
   res.send(rs);
 });
 
