@@ -8,14 +8,14 @@ module.exports = (router) => {
     // auth(router, '/admin');
     
     /* Get all partner*/
-    router.get('/getAllPartner', async (req, res) => {
-        let rs = await dbs.execute('select * from partner p, customer c');
+    router.get('/getAllPartner/:limit/:page', async (req, res) => {
+        let rs = await dbs.execute('select p.* from partner p, customer c where p.CustomerID = c.CustomerID');
         res.json(rs);
     });
 
     /* Get partner theo trạng thái */
-    router.get('/getPartnerByStatusID/:StatusID', async (req, res) => {
-        let rs = await dbs.execute('select * from partner where StatusID = ?',[req.param.StatusID]);
+    router.get('/getPartnerByStatusID/:StatusID:/:limit/:page', async (req, res) => {
+        let rs = await dbs.execute('select * from partner p where  StatusID = ? order by p.PartnerID LIMIT ?, ?',[req.param.StatusID,req.param.limit,req.param.limit*req.param.page]);
         res.json(rs);
     });
 
@@ -32,7 +32,7 @@ module.exports = (router) => {
         res.json(rs);
     });
 
-    
+
 
     
 
