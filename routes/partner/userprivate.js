@@ -5,11 +5,11 @@ const auth = require('../../utils/auth');
 
 module.exports = (router) => {
 
-    auth(router, '/partner');
+    // auth(router, '/partner');
     
-    /* Get All User */
-    router.get('/', async (req, res) => {
-        let rs = await dbs.execute('select * from customer');
+    /* Get User by id */
+    router.get('/:id', async (req, res) => {
+        let rs = await dbs.execute('SELECT p.PartnerName, p.PartnerAddress, p.PartnerEmail, p.PartnerPhone, p.PartnerDescription, p.PartnerImage, c.CityName FROM `partner` p, city c WHERE p.CityID = c.CityID and CustomerID = ?', [req.params.id]);
         res.json(rs);
     });
 };
