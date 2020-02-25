@@ -13,10 +13,10 @@ module.exports = (router) => {
         res.json(rs);
     });
 
-    router.put('/', async (req, res) => {
+    router.put('/', (req, res) => {
         console.log(req.body);
         
         // let rs = await dbs.execute('SELECT p.PartnerID, p.PartnerName, p.PartnerAddress, p.PartnerEmail, p.PartnerPhone, p.PartnerDescription, p.PartnerImage, c.CityName FROM partner p, city c WHERE p.CityID = c.CityID and CustomerID = ?', [req.params.id]);
-        res.json();
+        res.json({a:'a'});
     });
 };

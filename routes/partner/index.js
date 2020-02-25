@@ -62,11 +62,6 @@ router.post('/', [
 
 });
 
-/* Edit User */
-router.put('/', (req, res) => {
-
-});
-
 privateRouteUser(router);
 
 module.exports = router;
