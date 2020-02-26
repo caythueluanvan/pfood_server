@@ -32,4 +32,9 @@ module.exports = (router) => {
         let rs = await dbs.execute(sql, bind);
         res.json(rs);
     });
+    router.post('/product',async (req, res) => {
+        let bind = [await dbs.getNextID('items','itemid'),req.body.PartnerID,req.body.ItemName,req.body.description,req.body.ItemImage]
+        let rs = await dbs.execute(`insert into items values(?,?,?,?,?)`, bind);
+        res.json(rs);
+    });
 };
