@@ -3,7 +3,7 @@ const router = express.Router();
 const dbs = require('../../utils/dbs');
 const { check, validationResult, body } = require('express-validator');
 const bcrypt = require('bcrypt');
-const privateRouteUser = require('./userprivate');
+const privateRoutePartner = require('./partnerprivate');
 /* Add User */
 router.post('/', [
     check('name', 'Name field is required').notEmpty(),
@@ -62,6 +62,6 @@ router.post('/', [
 
 });
 
-privateRouteUser(router);
+privateRoutePartner(router);
 
 module.exports = router;

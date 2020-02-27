@@ -32,9 +32,20 @@ module.exports = (router) => {
         let rs = await dbs.execute(sql, bind);
         res.json(rs);
     });
+
     router.post('/product',async (req, res) => {
         let bind = [await dbs.getNextID('items','itemid'),req.body.PartnerID,req.body.ItemName,req.body.description,req.body.ItemImage]
         let rs = await dbs.execute(`insert into items values(?,?,?,?,?)`, bind);
+        res.json(rs);
+    });
+
+    router.get('/product/:partnerid',async (req, res) => {
+        let rs = await dbs.execute(`select ItemID, ItemName, description, ItemImage from items where PartnerID = ?`, [req.params.partnerid]);
+        res.json(rs);
+    });
+
+    router.delete('/product/:itemid',async (req, res) => {
+        let rs = await dbs.execute(`delete from items where ItemID = ?`, [req.params.itemid]);
         res.json(rs);
     });
 };
