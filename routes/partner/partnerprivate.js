@@ -48,4 +48,10 @@ module.exports = (router) => {
         let rs = await dbs.execute(`delete from items where ItemID = ?`, [req.params.itemid]);
         res.json(rs);
     });
+
+    router.put('/product',async (req, res) => {
+        let bind = [req.body.ItemName, req.body.description, req.body.ItemImage, req.body.ItemID];
+        let rs = await dbs.execute(`update items set ItemName = ?, description = ?, ItemImage = ? where ItemID = ?`, bind);
+        res.json(rs);
+    });
 };
