@@ -40,7 +40,7 @@ module.exports = (router) => {
     });
 
     router.get('/product/:partnerid',async (req, res) => {
-        let rs = await dbs.execute(`select ItemID, ItemName, description, ItemImage from items where PartnerID = ?`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.description, i.ItemImage, i.StatusID, s.StatusName from items i, status s where i.statusid=s.statusid and PartnerID = ?`, [req.params.partnerid]);
         res.json(rs);
     });
 
