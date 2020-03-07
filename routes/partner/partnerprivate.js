@@ -56,4 +56,16 @@ module.exports = (router) => {
         let rs = await dbs.execute(`update items set ItemName = ?, description = ?, ItemImage = ? where ItemID = ?`, bind);
         res.json(rs);
     });
+    //
+
+    router.post('/sourceofitems',async (req, res) => {
+        let bind = [await dbs.getNextID('sourceofitems','SourceOfItemsID'),req.body.ItemID,req.body.Summary,req.body.Price,new Date(req.body.StartTime),new Date(req.body.EndTime),req.body.Description]
+        let rs = await dbs.execute(`insert into sourceofitems(SourceOfItemsID, ItemID, Summary, Price, StartTime, EndTime, Description) values(?,?,?,?,?,?,?)`, bind);                
+        res.json(rs);
+    });
+
+    router.get('/sourceofitems/:partnerid',async (req, res) => {
+        let rs = await dbs.execute(`SELECT s.*, i.ItemName, i.ItemImage FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and i.partnerid = ? and s.EndTime >= now()`, [req.params.partnerid]);
+        res.json(rs);
+    });
 };
