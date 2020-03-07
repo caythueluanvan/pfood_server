@@ -1,5 +1,6 @@
 const dbs = require('../../utils/dbs');
 const auth = require('../../utils/auth');
+var uniqid = require('uniqid');
 /* Authentication */
 
 
@@ -34,5 +35,106 @@ module.exports = (router) => {
     router.get('/', async (req, res) => {
         let rs = await dbs.execute('select * from customer');
         res.json(rs);
+    });
+
+    router.get('/products/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
+        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= CURRENT_TIME'
+        if(req.params.shop != 'all'){
+            sql = sql + ' and i.PartnerID = ' + req.params.shop
+        }
+
+        if(req.params.catalog != 'all'){
+            sql = sql + ' and p.PartnerTypeID = ' + req.params.catalog
+        }
+
+        if(req.params.type != 'all'){
+            if(req.params.type == 'MostView'){
+
+                sql = sql + ' and s.StartTime <= CURRENT_TIME order by s.view desc'
+            }
+            else if(req.params.type = 'Latest'){
+                sql = sql + ' and s.StartTime >= CURRENT_TIME  order by s.StartTime'
+            }
+        }
+        else if(req.params.type == 'all'){
+            sql = sql + ' and s.StartTime <= CURRENT_TIME order by s.StartTime'
+        }
+        sql = sql + ' limit ' + req.params.limit + ' offset ' + req.params.offset;
+
+        console.log(sql)
+        let rs = await dbs.execute(sql);
+        res.json(rs)
+    });
+
+    
+    router.get('/products/:SourceOfItemsID', async (req, res) => {
+        sql = 'select s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = ' + req.params.SourceOfItemsID
+        sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = ' + req.params.SourceOfItemsID
+        console.log(sqlStartOfPartner)
+        let rs = await dbs.execute(sql);
+        let rs2 = await dbs.execute(sqlStartOfPartner);
+        console.log(rs2[0])
+        rs[0].star = rs2[0].star
+        rs[0].like = rs2[0].likes
+        res.json(rs[0])
+    });
+
+    router.post('/follow', async (req, res) => {
+        let sql = 'select count(*) as checks from follow where PartnerID = "' + req.body.PartnerID + '" and CustomerID = "' + req.body.CustomerID +'"'
+        let rs = await dbs.execute(sql);
+        let sql2
+        if(rs[0].checks > 0){
+             sql2 = 'delete from follow where PartnerID = "' + req.body.PartnerID + '" and CustomerID = "' + req.body.CustomerID +'"'
+        }
+        else{
+             sql2 = 'INSERT INTO follow (CustomerID, PartnerID) VALUES ( "'  + req.body.CustomerID + '", "' + req.body.PartnerID +'")'
+        }
+
+        let rs2 = await dbs.execute(sql2);
+        let result = {status: true,message:"Thành công"};
+        if(rs2.affectedRows = 0){
+            result.status = false 
+            result.message = rs2.message
+        }
+        res.json(result)
+    });
+
+
+    router.post('/view', async (req, res) => {
+        let sql = 'UPDATE sourceofitems SET view = view+1 WHERE SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        let rs = await dbs.execute(sql);
+        let result = {status: true,message:"Thành công"};
+        if(rs.affectedRows = 0){
+            result.status = false 
+            result.message = rs.message
+        }
+        res.json(result)
+    });
+
+    router.post('/order', async (req, res) => {
+        let result = {status: true,message:"Thành công"};
+        let id = uniqid();
+        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment, StatusID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", 1)'
+        console.log(sql)
+        let rs = await dbs.execute(sql);
+        if(rs.affectedRows > 0){
+            let orderDetail = req.body.orderDetail
+            
+            orderDetail.map((o) => {
+                let sql2 = 'INSERT INTO orderdetail(OrderID, SourceOfItemsID, Total, Price, Ship, Description) VALUES ("' + id +'", "'+ o.SourceOfItemsID +'", "'+ o.Total +'", "'+ o.Price +'", "'+ o.Ship +'", "'+ o.Description +'")'
+                console.log(sql2)
+                let rs2 = dbs.execute(sql2);
+                if(rs2.affectedRows = 0){
+                    result.status = false 
+                    result.message = rs2.message
+                }
+            })
+        }
+        else{
+            result.status = false 
+            result.message = rs.message
+        }
+        
+        res.json(result)
     });
 };
