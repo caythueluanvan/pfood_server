@@ -30,6 +30,8 @@ module.exports = (router) => {
         bind.push('PartnerID');
         bind.push(PartnerID);
         let rs = await dbs.execute(sql, bind);
+        
+        
         res.json(rs);
     });
 

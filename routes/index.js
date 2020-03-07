@@ -11,8 +11,9 @@ router.get('/', function (req, res, next) {
 });
 
 router.get('/test', async (req, res, next) => {
-  let rs = await dbs.getNextID('items','itemid');
-  res.send(rs);
+ console.log(req.body);
+ 
+  res.send(req.body);
 });
 
 router.get('/city', async (req, res, next) => {
