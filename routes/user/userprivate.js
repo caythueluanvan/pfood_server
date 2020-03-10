@@ -29,7 +29,7 @@ module.exports = (router) => {
     //         next(err)
     //     }
     // });
-    // auth(router, '/user');
+    auth(router, '/user');
     
     /* Get All User */
     router.get('/', async (req, res) => {
