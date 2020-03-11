@@ -56,7 +56,7 @@ router.post('/', [
             res.json(rs)
         }
     } catch (error) {
-        //console.log(error);
+        console.log(error);
         res.json({ err: 'error' });
     }
 
