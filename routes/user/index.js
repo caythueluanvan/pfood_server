@@ -43,7 +43,7 @@ router.post('/', [
         // Check Errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {            
-            res.status(422).json({ errors: errors.array() });
+            res.json({ errors: errors.array() });
         } else {
             const saltRounds = 10;
             let salt = bcrypt.genSaltSync(saltRounds);
