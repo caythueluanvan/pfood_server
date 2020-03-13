@@ -29,7 +29,7 @@ module.exports = (router) => {
     //         next(err)
     //     }
     // });
-    auth(router, '/user');
+    // auth(router, '/user');
     
     /* Get All User */
     router.get('/', async (req, res) => {
@@ -38,7 +38,7 @@ module.exports = (router) => {
     });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
-        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= CURRENT_TIME '
+        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() '
         
         if(req.params.city != 'all'){
             sql = sql + ' and p.CItyID = ' + req.params.city
@@ -54,14 +54,11 @@ module.exports = (router) => {
         if(req.params.type != 'all'){
             if(req.params.type == 'MostView'){
 
-                sql = sql + ' and s.StartTime <= CURRENT_TIME order by s.view desc'
+                sql = sql + ' order by s.view desc'
             }
             else if(req.params.type = 'Latest'){
-                sql = sql + ' and s.StartTime >= CURRENT_TIME  order by s.StartTime'
+                sql = sql + '  order by s.StartTime desc'
             }
-        }
-        else if(req.params.type == 'all'){
-            sql = sql + ' and s.StartTime <= CURRENT_TIME order by s.StartTime'
         }
         sql = sql + ' limit ' + req.params.limit + ' offset ' + req.params.offset;
 
