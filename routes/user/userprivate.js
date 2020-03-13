@@ -38,7 +38,7 @@ module.exports = (router) => {
     });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
-        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= CURRENT_TIME and '
+        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= CURRENT_TIME '
         
         if(req.params.city != 'all'){
             sql = sql + ' and p.CItyID = ' + req.params.city
