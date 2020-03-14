@@ -29,7 +29,7 @@ module.exports = (router) => {
     //         next(err)
     //     }
     // });
-    // auth(router, '/user');
+    auth(router, '/user');
     
     /* Get All User */
     router.get('/', async (req, res) => {
@@ -38,7 +38,7 @@ module.exports = (router) => {
     });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
-        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() '
+        let sql = 'select s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1'
         
         if(req.params.city != 'all'){
             sql = sql + ' and p.CItyID = ' + req.params.city
