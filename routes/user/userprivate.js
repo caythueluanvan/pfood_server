@@ -36,6 +36,11 @@ module.exports = (router) => {
         let rs = await dbs.execute('select * from customer');
         res.json(rs);
     });
+    router.get('/banner', async (req, res) => {
+        let rs = await dbs.execute('select ParamValue from config where ParamName = "Banner"');
+        console.log(rs)
+        res.json(rs[0].ParamValue);
+    });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
         let sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1'
