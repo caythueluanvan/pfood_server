@@ -69,8 +69,8 @@ module.exports = (router) => {
 
     
     router.get('/products/:SourceOfItemsID', async (req, res) => {
-        sql = 'select s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = ' + req.params.SourceOfItemsID
-        sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = ' + req.params.SourceOfItemsID
+        sql = 'select s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
+        sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         console.log(sqlStartOfPartner)
         let rs = await dbs.execute(sql);
         let rs2 = await dbs.execute(sqlStartOfPartner);
