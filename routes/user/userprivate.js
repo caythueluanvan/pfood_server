@@ -88,7 +88,7 @@ module.exports = (router) => {
     router.get('/products/:SourceOfItemsID', async (req, res) => {
         sql = 'select i.ItemName, s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
-        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc limit 2'
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc limit 3'
         let rs = await dbs.execute(sql);
         let rs2 = await dbs.execute(sqlStartOfPartner);
         let rs3 = await dbs.execute(sqlListRate);
@@ -200,7 +200,7 @@ module.exports = (router) => {
             sql1= 'update cart set amount = amount + ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
         }
         else{
-            sql1= 'INSERT INTO cart(SourceOfItemsID, CustomerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", '+req.body.CustomerID+'", '+req.body.amount+'")'
+            sql1= 'INSERT INTO cart(SourceOfItemsID, CustomerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", "'+req.body.CustomerID+'", "'+req.body.amount+'")'
         }
 
         let rs1 = await dbs.execute(sql1);
@@ -209,5 +209,31 @@ module.exports = (router) => {
             result.message = rs1.message
         }
         res.json(result)
+    });
+
+    router.post('/product/minusToCart', async (req, res) => {
+        let result = {status: true,message:"Thành công"};
+        let sql = 'select *  from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        let rs = await dbs.execute(sql)
+        let sql1
+        if(rs[0].amount > req.body.amount){
+            sql1= 'update cart set amount = amount - ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        }
+        else{
+            sql1 = 'delete from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        }
+        let rs1 = await dbs.execute(sql1)
+        if(rs1.affectedRows = 0){
+            result.status = false 
+            result.message = rs1.message
+        }
+        res.json(result)
+    });
+
+    router.get('/cart/:CustomerID', async (req, res) => {
+        sql = 'select i.ItemName, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
+        let rs = await dbs.execute(sql);
+        
+        res.json(rs)
     });
 };
