@@ -88,7 +88,7 @@ module.exports = (router) => {
     router.get('/products/:SourceOfItemsID', async (req, res) => {
         sql = 'select i.ItemName, s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
-        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") limit 2'
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc limit 2'
         let rs = await dbs.execute(sql);
         let rs2 = await dbs.execute(sqlStartOfPartner);
         let rs3 = await dbs.execute(sqlListRate);
@@ -96,6 +96,14 @@ module.exports = (router) => {
         rs[0].like = rs2[0].likes
         rs[0].rate = rs3 
         res.json(rs[0])
+    });
+
+    router.get('/products/ratedetail/:SourceOfItemsID/:limit/:offset', async (req, res) => {
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
+
+        let rs3 = await dbs.execute(sqlListRate);
+
+        res.json(rs3)
     });
 
     router.post('/products/isRate', async (req, res) => {
@@ -179,6 +187,27 @@ module.exports = (router) => {
             result.message = rs.message
         }
         
+        res.json(result)
+    });
+
+    router.post('/product/addToCart', async (req, res) => {
+        let result = {status: true,message:"Thành công"};
+
+        let sql = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        let rs = await dbs.execute(sql);
+        let sql1
+        if(rs[0].tong > 0){
+            sql1= 'update cart set amount = amount + ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        }
+        else{
+            sql1= 'INSERT INTO cart(SourceOfItemsID, CustomerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", '+req.body.CustomerID+'", '+req.body.amount+'")'
+        }
+
+        let rs1 = await dbs.execute(sql1);
+        if(rs1.affectedRows = 0){
+            result.status = false 
+            result.message = rs1.message
+        }
         res.json(result)
     });
 };
