@@ -38,8 +38,13 @@ module.exports = (router) => {
     });
     router.get('/banner', async (req, res) => {
         let rs = await dbs.execute('select ParamValue from config where ParamName = "Banner"');
-        console.log(rs)
-        res.json(rs[0].ParamValue);
+        // console.log(rs)
+
+        let arrResult = [];
+        rs.map((r) => {
+            arrResult.push(r.ParamValue)
+        })
+        res.json(arrResult);
     });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
@@ -76,13 +81,24 @@ module.exports = (router) => {
     router.get('/products/:SourceOfItemsID', async (req, res) => {
         sql = 'select i.ItemName, s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
-        console.log(sqlStartOfPartner)
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") limit 3'
         let rs = await dbs.execute(sql);
         let rs2 = await dbs.execute(sqlStartOfPartner);
-        console.log(rs2[0])
+        let rs3 = await dbs.execute(sqlListRate);
         rs[0].star = rs2[0].star
         rs[0].like = rs2[0].likes
+        rs[0].rate = rs3 
         res.json(rs[0])
+    });
+
+    router.post('/products/isRate', async (req, res) => {
+        sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.customerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID = "'+req.body.ItemID+'"'
+        let result = false
+        let rs = await dbs.execute(sqlisRate);
+        if(rs[0].tong > 0){
+            result = true
+        }
+        res.json(result)
     });
 
     router.post('/follow', async (req, res) => {
