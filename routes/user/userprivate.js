@@ -92,11 +92,24 @@ module.exports = (router) => {
     });
 
     router.post('/products/isRate', async (req, res) => {
-        sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.customerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID = "'+req.body.ItemID+'"'
+        sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.CustomerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.body.SourceOfItemsID+'")'
+        console.log(sqlisRate)
         let result = false
         let rs = await dbs.execute(sqlisRate);
         if(rs[0].tong > 0){
             result = true
+        }
+        res.json(result)
+    });
+
+    router.post('/products/createRate', async (req, res) => {
+        let id = uniqid();
+        let result = {status: true,message:"Thành công"};
+        sqlisRate = 'INSERT INTO rate(CustomerID, SourceOfItemsID, Rate, Comment, RateID) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.Rate+'","'+req.body.Comment+'","'+id+'")'
+        let rs = await dbs.execute(sqlisRate);
+        if(rs.affectedRows = 0){
+            result.status = false 
+            result.message = rs.message
         }
         res.json(result)
     });
