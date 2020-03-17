@@ -231,7 +231,7 @@ module.exports = (router) => {
     });
 
     router.get('/cart/:CustomerID', async (req, res) => {
-        sql = 'select i.ItemName, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
+        sql = 'select i.ItemName, c.amount, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
         let rs = await dbs.execute(sql);
         
         res.json(rs)
