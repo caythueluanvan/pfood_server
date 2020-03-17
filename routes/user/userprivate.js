@@ -77,11 +77,18 @@ module.exports = (router) => {
         res.json(rs)
     });
 
+    router.get('/products/:SearchText/:CityID', async (req, res) => {
+        sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 and (p.PartnerName like "%'+req.params.SearchText+'%" or i.ItemName like "%' +req.params.SearchText+ '%") and p.CItyID = "' +req.params.CityID+ '"'
+        let rs = await dbs.execute(sql);
+        
+        res.json(rs)
+    });
+
     
     router.get('/products/:SourceOfItemsID', async (req, res) => {
         sql = 'select i.ItemName, s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
-        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") limit 3'
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") limit 2'
         let rs = await dbs.execute(sql);
         let rs2 = await dbs.execute(sqlStartOfPartner);
         let rs3 = await dbs.execute(sqlListRate);
@@ -105,7 +112,7 @@ module.exports = (router) => {
     router.post('/products/createRate', async (req, res) => {
         let id = uniqid();
         let result = {status: true,message:"Thành công"};
-        sqlisRate = 'INSERT INTO rate(CustomerID, SourceOfItemsID, Rate, Comment, RateID) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.Rate+'","'+req.body.Comment+'","'+id+'")'
+        sqlisRate = 'INSERT INTO rate(CustomerID, SourceOfItemsID, Rate, Comment, RateID, CreateDate) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.Rate+'","'+req.body.Comment+'","'+id+'",+now())'
         let rs = await dbs.execute(sqlisRate);
         if(rs.affectedRows = 0){
             result.status = false 
@@ -113,6 +120,8 @@ module.exports = (router) => {
         }
         res.json(result)
     });
+
+    
 
     router.post('/follow', async (req, res) => {
         let sql = 'select count(*) as checks from follow where PartnerID = "' + req.body.PartnerID + '" and CustomerID = "' + req.body.CustomerID +'"'
