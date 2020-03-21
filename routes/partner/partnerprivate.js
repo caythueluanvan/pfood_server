@@ -36,8 +36,13 @@ module.exports = (router) => {
     });
 
     router.post('/product',async (req, res) => {
-        let bind = [await dbs.getNextID('items','itemid'),req.body.PartnerID,req.body.ItemName,req.body.description,req.body.ItemImage]
-        let rs = await dbs.execute(`insert into items values(?,?,?,?,?)`, bind);
+         let id = await dbs.getNextID('items','itemid');
+        
+        
+         let bind = [id,req.body.PartnerID,req.body.ItemName,req.body.description,req.body.img, 0]
+         let rs = await dbs.execute(`insert into items(itemid, partnerid, itemname, description, itemimage, statusid) values(?,?,?,?,?,?)`, bind);
+         console.log(rs);
+         
         res.json(rs);
     });
 
