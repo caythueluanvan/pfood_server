@@ -5,7 +5,7 @@ const auth = require('../../utils/auth');
 
 module.exports = (router) => {
     
-    auth(router, '/admin');
+    // auth(router, '/admin');
     // API Partner
     //count partner
     router.get('/countPartner', async (req, res) => {
