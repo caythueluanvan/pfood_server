@@ -3,7 +3,7 @@ const router = express.Router();
 const dbs = require('../utils/dbs');
 const jwt = require('jsonwebtoken');
 const config = require('../utils/config');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 /* GET home page. */
 router.get('/', function (req, res, next) {
