@@ -36,9 +36,16 @@ module.exports = (router) => {
     });
 
     router.post('/product',async (req, res) => {
-        let bind = [await dbs.getNextID('items','itemid'),req.body.PartnerID,req.body.ItemName,req.body.description,req.body.ItemImage]
-        let rs = await dbs.execute(`insert into items values(?,?,?,?,?)`, bind);
-        res.json(rs);
+        let productId = await dbs.getNextID('items','itemid');
+        let bind = [productId ,req.body.PartnerID,req.body.ItemName,req.body.description,req.body.img, 0]
+        let rs = await dbs.execute(`insert into items values(?,?,?,?,?,?)`, bind);
+        if(rs.affectedRows > 0){
+            let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.description, i.ItemImage, i.StatusID, s.StatusName from items i, status s where i.statusid=s.statusid and i.ItemID = ? `,[productId])            
+             res.json({type: 'success', msg: 'Thêm thành công !', product: rsAdd});
+        }else{
+            res.json({type: 'fail',  msg: 'Thêm không thành công !'});
+        }
+        
     });
 
     router.get('/product/:partnerid',async (req, res) => {
@@ -48,7 +55,11 @@ module.exports = (router) => {
 
     router.delete('/product/:itemid',async (req, res) => {
         let rs = await dbs.execute(`delete from items where ItemID = ?`, [req.params.itemid]);
-        res.json(rs);
+        if(rs.affectedRows > 0){      
+             res.json({type: 'success', msg: 'Xóa thành công !', productId: req.params.itemid});
+        }else{
+            res.json({type: 'fail',  msg: 'Xóa không thành công !'});
+        }
     });
 
     router.put('/product',async (req, res) => {
