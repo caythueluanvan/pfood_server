@@ -47,12 +47,12 @@ router.post('/signin', async function (req, res) {
 });
 
 router.post('/admin/signin', async function (req, res) {
-  let mail = req.body.email;
-  let password = req.body.password;
-  console.log(mail);
+  let mail = req.body.user.email;
+  let password = req.body.user.password;
   
   try {
     let user = await dbs.execute('select * from admin where AdminEmail =?',[mail]);    
+    console.log(mail);
     
     if (user[0]) {
       let rs = bcrypt.compareSync(password, user[0].AdminPassword);              
