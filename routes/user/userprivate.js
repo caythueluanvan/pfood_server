@@ -36,6 +36,39 @@ module.exports = (router) => {
         let rs = await dbs.execute('select * from customer');
         res.json(rs);
     });
+
+    router.get('/history/:customer_id', async (req, res) => {
+        sql = 'select x.* from (select OrderID,StatusID,addDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and addDate is not null union all select OrderID,StatusID,rejectDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and rejectDate is not null union all select OrderID,StatusID,approveDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and approveDate is not null)x order by x.CreateDate desc '
+        console.log(sql)
+        let rs = await dbs.execute(sql)
+        res.json(rs);
+    });
+
+    router.get('/historyDetail/:order_id', async (req, res) => {
+        let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, s.Image, s.Description  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
+        console.log(sql)
+        let rs1 = await dbs.execute(sql);
+        let sql2 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID)'
+        let rs2 = await dbs.execute(sql2);
+        let rs = {}
+        rs.Partner = rs2[0]
+        rs.ListItems = rs1
+        res.json(rs)
+    });
+
+    router.get('/reject/:order_id', async (req, res) => {
+        let sql = 'update `order` set statusID = 3, rejectDate = now() where orderid = "'+req.params.order_id+'"'
+        console.log(sql)
+        let rs= await dbs.execute(sql);
+        if(rs.changedRows > 0){
+            res.json({status:true, message: "huy thanh cong"})
+        }
+        else{
+            res.json({status:false, message: "huy khong thanh cong"})
+        }
+        
+    });
+
     router.get('/banner', async (req, res) => {
         let rs = await dbs.execute('select ParamValue from config where ParamName = "Banner"');
         // console.log(rs)
@@ -164,14 +197,13 @@ module.exports = (router) => {
     });
 
     router.post('/order', async (req, res) => {
-        let result = {status: true,message:"Thành công"};
+        
         let id = uniqid();
-        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment, StatusID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", 1)'
-        console.log(sql)
+        let result = {status: true,message:id };
+        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 1)'
         let rs = await dbs.execute(sql);
         if(rs.affectedRows > 0){
             let orderDetail = req.body.orderDetail
-            
             orderDetail.map((o) => {
                 let sql2 = 'INSERT INTO orderdetail(OrderID, SourceOfItemsID, Total, Price, Ship, Description) VALUES ("' + id +'", "'+ o.SourceOfItemsID +'", "'+ o.Total +'", "'+ o.Price +'", "'+ o.Ship +'", "'+ o.Description +'")'
                 console.log(sql2)
@@ -195,20 +227,50 @@ module.exports = (router) => {
 
         let sql = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
         let rs = await dbs.execute(sql);
-        let sql1
+        let sql2 = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'"'
+        let rs2 = await dbs.execute(sql2);
         if(rs[0].tong > 0){
-            sql1= 'update cart set amount = amount + ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+            let sql1= 'update cart set amount = amount + ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+            let rs1 = await dbs.execute(sql1);
+            if(rs1.affectedRows = 0){
+                result.status = false 
+                result.message = rs1.message
+                res.json(result)
+            }else{
+                res.json(result)
+            }
         }
-        else{
-            sql1= 'INSERT INTO cart(SourceOfItemsID, CustomerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", "'+req.body.CustomerID+'", "'+req.body.amount+'")'
+        else if (rs2[0].tong == 0){
+            let sql3= 'INSERT INTO cart(SourceOfItemsID, CustomerID, PartnerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", "'+req.body.CustomerID+'", "'+ req.body.PartnerID+'", "'+req.body.amount+'")'
+            let rs3 = await dbs.execute(sql3);
+            if(rs3.affectedRows == 0){
+                result.status = false 
+                result.message = rs3.message
+                res.json(result)
+            }else{
+                res.json(result)
+            }
+        }
+        else {
+            let sql4 = 'select case when "'+ req.body.PartnerID +'" in (select distinct PartnerID from cart where CustomerID = "'+req.body.CustomerID+'") then 1 else 0 end tong from dual'
+            let rs4 = await dbs.execute(sql4);
+            if(rs4[0].tong == 1){
+                let sql5= 'INSERT INTO cart(SourceOfItemsID, CustomerID, PartnerID, amount) VALUES ("'+req.body.SourceOfItemsID+'", "'+req.body.CustomerID+'", "'+ req.body.PartnerID+'", "'+req.body.amount+'")'
+                let rs5 = await dbs.execute(sql5);
+                if(rs5.affectedRows = 0){
+                    result.status = false 
+                    result.message = rs5.message
+                    res.json(result)
+                }else{
+                    res.json(result)
+                }
+            }
+            else{
+                res.json({status:false, message: 'not sam partner'})
+            }
         }
 
-        let rs1 = await dbs.execute(sql1);
-        if(rs1.affectedRows = 0){
-            result.status = false 
-            result.message = rs1.message
-        }
-        res.json(result)
+       
     });
 
     router.post('/product/minusToCart', async (req, res) => {
@@ -231,9 +293,23 @@ module.exports = (router) => {
     });
 
     router.get('/cart/:CustomerID', async (req, res) => {
-        sql = 'select i.ItemName, c.amount, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
-        let rs = await dbs.execute(sql);
         
+        let sql = 'select i.ItemName, c.amount, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
+        let rs2 = await dbs.execute(sql);
+        if(rs2.length > 0){
+        let sql1 = 'select * from partner  where PartnerID in (select distinct PartnerID from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 )'
+        let rs1 = await dbs.execute(sql1);
+        let rs = {}
+        rs.Partner = rs1[0]
+        rs.ListItems = rs2
         res.json(rs)
+        }
+        else{
+            res.json({
+                Partner:{},
+                ListItems:[]
+            })
+        }
+        
     });
 };
