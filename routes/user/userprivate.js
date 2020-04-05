@@ -298,7 +298,7 @@ module.exports = (router) => {
         let sql = 'select i.ItemName, c.amount, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
         let rs2 = await dbs.execute(sql);
         if(rs2.length > 0){
-        let sql1 = 'select * from partner  where PartnerID in (select distinct PartnerID from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 )'
+        let sql1 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 )'
         let rs1 = await dbs.execute(sql1);
         let rs = {}
         rs.Partner = rs1[0]
