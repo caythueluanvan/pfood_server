@@ -22,6 +22,11 @@ router.get('/city', async (req, res, next) => {
   res.send(rs);
 });
 
+router.get('/category', async (req, res, next) => {
+  let rs = await dbs.execute(`select * from category`,[]);
+  res.send(rs);
+});
+
 router.post('/signin', async function (req, res) {
   let username = req.body.username;
   let password = req.body.password;

@@ -45,8 +45,8 @@ module.exports = (router) => {
     router.post('/product', async (req, res) => {
         let productId = await dbs.getNextID('items', 'itemid');
 
-        let bind = [productId, req.body.PartnerID, req.body.ItemName, req.body.description, req.body.img, 0]
-        let rs = await dbs.execute(`insert into items values(?,?,?,?,?,?)`, bind);
+        let bind = [productId, req.body.PartnerID, req.body.ItemName, req.body.category, req.body.description, req.body.img, 0]
+        let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, CategoryID, description, ItemImage, statusID) values(?,?,?,?,?,?,?)`, bind);
         if (rs.affectedRows > 0) {
             let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.description, i.ItemImage, i.StatusID, s.StatusName from items i, status s where i.statusid=s.statusid and i.ItemID = ? `, [productId])
             res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
@@ -127,7 +127,7 @@ module.exports = (router) => {
 
     router.get('/homepage', async (req, res) => {
         let rsItemsActive = await dbs.execute(`SELECT count(*) as count FROM items WHERE STATUSid = 1 and PartnerID = ?`, [req.headers.partnerid]);
-        
+
         let rsSourceOfItemsActive = await dbs.execute(`SELECT count(*) as count FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and s.EndTime >= now() and PartnerID = ? and year(s.EndTime) =?`, [req.headers.partnerid, req.headers.year]);
         let rsSourceOfItemsOfYear = await dbs.execute(`SELECT count(*) as count FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and PartnerID = ? and year(s.EndTime) =?`, [req.headers.partnerid, req.headers.year]);
         let rsOrderActive = await dbs.execute('select count(DISTINCT od.orderid) as count from orderdetail od, `order` o where o.orderid = od.orderid and o.statusid = 1 and od.SourceOfItemsID in (SELECT SourceOfItemsID FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and PartnerID = ? and year(o.adddate) =?)', [req.headers.partnerid, req.headers.year]);
@@ -143,8 +143,9 @@ module.exports = (router) => {
         let rsLatestSourceOfItem = await dbs.execute(`SELECT s.SourceOfItemsID, s.StartTime, s.EndTime, i.ItemName, i.ItemImage FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and PartnerID = ? order by EndTime desc limit 5`, [req.headers.partnerid]);
 
         let rsLatestOrder = await dbs.execute('SELECT o.orderid, o.adddate, c.CustomerName,stt.StatusID, stt.StatusName, sum( od.Total*s.Price) as total FROM sourceofitems s, items i, orderdetail od, `order` o, customer c, status stt WHERE o.statusid = stt.StatusID and c.CustomerID = o.customerid and o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID and PartnerID = ? group by o.orderid, o.adddate, c.CustomerName, stt.StatusName order by adddate desc limit 6', [req.headers.partnerid]);
-        res.json({rsItemsActive:rsItemsActive[0].count, 
-            rsSourceOfItemsActive:rsSourceOfItemsActive[0].count,rsSourceOfItemsOfYear:rsSourceOfItemsOfYear[0].count,rsOrderActive:rsOrderActive[0].count,rsOrderOfYear:rsOrderOfYear[0].count,rsTotal:rsTotal[0].total,rsTotalByMonth:rsTotalByMonth,rsTotalByMonthLastYear:rsTotalByMonthLastYear,rsPercentByCategory:rsPercentByCategory,rsLatestSourceOfItem:rsLatestSourceOfItem,rsLatestOrder:rsLatestOrder
+        res.json({
+            rsItemsActive: rsItemsActive[0].count,
+            rsSourceOfItemsActive: rsSourceOfItemsActive[0].count, rsSourceOfItemsOfYear: rsSourceOfItemsOfYear[0].count, rsOrderActive: rsOrderActive[0].count, rsOrderOfYear: rsOrderOfYear[0].count, rsTotal: rsTotal[0].total, rsTotalByMonth: rsTotalByMonth, rsTotalByMonthLastYear: rsTotalByMonthLastYear, rsPercentByCategory: rsPercentByCategory, rsLatestSourceOfItem: rsLatestSourceOfItem, rsLatestOrder: rsLatestOrder
         });
     });
 };
