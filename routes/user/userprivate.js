@@ -38,7 +38,7 @@ module.exports = (router) => {
     });
 
     router.get('/history/:customer_id', async (req, res) => {
-        sql = 'select x.* from (select OrderID,StatusID,addDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and addDate is not null union all select OrderID,StatusID,rejectDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and rejectDate is not null union all select OrderID,StatusID,approveDate CreateDate, ship, shipAddress, OrderNote,OrderPayment from `order` where customerID = "'+req.params.customer_id+'" and approveDate is not null)x order by x.CreateDate desc '
+        sql = 'select x.* from (select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.addDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.rejectDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.approveDate is not null)x order by x.CreateDate desc '
         console.log(sql)
         let rs = await dbs.execute(sql)
         res.json(rs);
@@ -237,7 +237,7 @@ module.exports = (router) => {
         
         let id = uniqid();
         let result = {status: true,message:id };
-        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 1)'
+        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID, PartnerID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 1, "'+ req.body.shipAddress +'")'
         let rs = await dbs.execute(sql);
         if(rs.affectedRows > 0){
             let orderDetail = req.body.orderDetail
