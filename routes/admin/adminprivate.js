@@ -114,4 +114,21 @@ module.exports = (router) => {
         let rs = await dbs.execute('update customer  set  StatusID = ? where CustomerID =  ?',[req.body.StatusID,req.body.CustomerID]);
         res.json(rs);
     });
+
+    router.get('/parameters', async (req, res) => {
+        let sql = "select * from parameters";
+        let rs = await dbs.execute(sql)
+        res.json(rs);
+    });
+
+    router.post('/parameters/update', async (req, res) => {
+        let result = {status: true,message:"Thành công"};
+        req.body.ListParam.map( async p => {
+            let sql = 'update parameters  set  ParamValue = "' + p.ParamValue + '" where ParamName = "' + p.ParamName + '"'
+            console.log(sql)
+            let rs = await dbs.execute(sql);
+        })
+        
+        res.json(result)
+    });
 };

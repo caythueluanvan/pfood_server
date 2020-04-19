@@ -58,11 +58,27 @@ module.exports = (router) => {
     });
 
     router.get('/reject/:order_id', async (req, res) => {
+        let sql2 = 'update customer set CountReject  = CountReject + 1 where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
+        let rs2= await dbs.execute(sql2);
         let sql = 'update `order` set statusID = 3, rejectDate = now() where orderid = "'+req.params.order_id+'"'
         console.log(sql)
         let rs= await dbs.execute(sql);
         if(rs.changedRows > 0){
-            res.json({status:true, message: "huy thanh cong"})
+            let sql6 = 'select * from orderdetail where OrderID = "' + req.params.order_id + '"'
+            let rs6 = await dbs.execute(sql6);
+            console.log(rs6)
+            rs6.forEach(o => {
+                let sql7 = 'update sourceofitems set Summary = Summary + ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
+                let rs7 = dbs.execute(sql7);
+            })
+            let sql3 = 'select CountReject from customer where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
+            let rs3= await dbs.execute(sql3);
+            if(rs3[0].CountReject == 5){
+                let sql2 = 'update customer set LockStartTime  = now() where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
+                res.json({status:logout, message: "huy thanh cong"})
+            }else{
+                res.json({status:true, message: "huy thanh cong"})
+            }
         }
         else{
             res.json({status:false, message: "huy khong thanh cong"})
@@ -140,6 +156,14 @@ module.exports = (router) => {
         res.json(rs3)
     });
 
+    router.get('/products/qnadetail/:SourceOfItemsID/:limit/:offset', async (req, res) => {
+        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.question, r.answer, r.CreateDate FROM qna r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
+
+        let rs3 = await dbs.execute(sqlListRate);
+
+        res.json(rs3)
+    });
+
     router.post('/products/isRate', async (req, res) => {
         sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.CustomerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.body.SourceOfItemsID+'")'
         console.log(sqlisRate)
@@ -155,6 +179,18 @@ module.exports = (router) => {
         let id = uniqid();
         let result = {status: true,message:"Thành công"};
         sqlisRate = 'INSERT INTO rate(CustomerID, SourceOfItemsID, Rate, Comment, RateID, CreateDate) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.Rate+'","'+req.body.Comment+'","'+id+'",+now())'
+        let rs = await dbs.execute(sqlisRate);
+        if(rs.affectedRows = 0){
+            result.status = false 
+            result.message = rs.message
+        }
+        res.json(result)
+    });
+
+    router.post('/products/createqna', async (req, res) => {
+        let id = uniqid();
+        let result = {status: true,message:"Thành công"};
+        sqlisRate = 'INSERT INTO qna(CustomerID, SourceOfItemsID, question, ID, CreateDate) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.question+'","'+id+'",now())'
         let rs = await dbs.execute(sqlisRate);
         if(rs.affectedRows = 0){
             result.status = false 
@@ -206,9 +242,15 @@ module.exports = (router) => {
         if(rs.affectedRows > 0){
             let orderDetail = req.body.orderDetail
             orderDetail.map((o) => {
+
                 let sql2 = 'INSERT INTO orderdetail(OrderID, SourceOfItemsID, Total, Price, Ship, Description) VALUES ("' + id +'", "'+ o.SourceOfItemsID +'", "'+ o.Total +'", "'+ o.Price +'", "'+ o.Ship +'", "'+ o.Description +'")'
                 console.log(sql2)
                 let rs2 = dbs.execute(sql2);
+
+                let sql7 = 'update sourceofitems set Summary = Summary - ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
+                console.log(sql7)
+                let rs7 = dbs.execute(sql7);
+
                 if(rs2.affectedRows = 0){
                     result.status = false 
                     result.message = rs2.message
@@ -267,7 +309,7 @@ module.exports = (router) => {
                 }
             }
             else{
-                res.json({status:false, message: 'not sam partner'})
+                res.json({status:repeat, message: 'not sam partner'})
             }
         }
 
