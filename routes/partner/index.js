@@ -9,8 +9,6 @@ const privateRoutePartner = require('./partnerprivate');
 /* Add User */
 router.post('/', [
     check('username', 'Tên đăng nhập không được để trống !').notEmpty(),
-    check('password', 'Mật khẩu không được để trống !').notEmpty(),
-    check('password', 'Mật khẩu tối thiểu 5 ký tự !').isLength({ min: 5 }),
     check('phone', 'Dộ dài số điện thoại không hợp lệ !').isLength({ min: 10 }),
     body('email').custom(async value => {
         let user = await dbs.execute('select * from partner where partneremail = ?', [value])
@@ -32,11 +30,7 @@ router.post('/', [
     }),
     body('username').custom(async (value, { req }) => {
         let user = await dbs.execute('select * from customer where customerusername = ?', [value])
-        if (user[0]) {
-            let rs = bcrypt.compareSync(req.body.password, user[0].CustomerPassword);            
-            if (!rs) {
-                return Promise.reject('Sai mật khẩu !');
-            }   
+        if (user[0]) { 
             return true;
         }
         return Promise.reject('Tài khoản khách hàng của bạn chưa tồn tại!');
@@ -53,17 +47,17 @@ router.post('/', [
         // Check Errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
+            
             res.status(200).json({ errors: errors.array() });
         } else {
             let customer_id = await dbs.execute(`select customerid from customer where customerusername = ?`, [req.body.username]);
-            let sql = `insert into partner(partnerid, customerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, statusid, ship) values(?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            let sql = `insert into partner(partnerid, customerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, statusid, ship) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             let partner_id = await dbs.getNextID('partner', 'partnerid');
             let bind = [partner_id, customer_id[0].customerid, req.body.name, req.body.address, req.body.email, req.body.phone, req.body.description, req.body.city, 0, req.body.ship];
             let rs = await dbs.execute(sql, bind);
             res.json(rs)
         }
     } catch (error) {
-        //console.log(error);
         res.json({ err: error });
     }
 
@@ -72,28 +66,30 @@ router.post('/', [
 // Sign in
 
 router.post('/signin', async function (req, res) {
-    let username = req.body.username;
+    let email = req.body.email;
     let password = req.body.password;
 
     try {
-        let user = await dbs.execute('select customer.*, partner.PartnerID, partner.PartnerName, partner.PartnerAddress, partner.PartnerEmail, partner.PartnerPhone, partner.PartnerDescription, partner.PartnerImage, partner.PartnerTypeID, partner.ship, partner.statusid PartnerStatus, city.* from customer, partner, city where CustomerUsername = ? and customer.CustomerID = partner.CustomerID and partner.cityID = city.cityID', [username]);
+        let user = await dbs.execute('select customer.*, partner.PartnerID, partner.PartnerName, partner.PartnerAddress, partner.PartnerEmail, partner.PartnerPassword, partner.PartnerPhone, partner.PartnerDescription, partner.PartnerImage, partner.PartnerTypeID, partner.ship, partner.statusid PartnerStatus, city.* from customer, partner, city where partner.PartnerEmail = ? and customer.CustomerID = partner.CustomerID and partner.cityID = city.cityID', [email]);
         
         if (user[0]) {
-            let rs = bcrypt.compareSync(password, user[0].CustomerPassword);
+            let rs = bcrypt.compareSync(password, user[0].PartnerPassword);            
             if(user[0].PartnerStatus !== 1){
                 res.json({ success: false, msg: 'Tài khoản của bạn đang bị khóa hoặc chưa kích hoạt !' });
-            } else if (rs) {
+            } else if (rs) {                                
                 delete user[0].CustomerPassword;
-                let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [username]);
+                delete user[0].PartnerPassword;
+                let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [user[0].CustomerUsername]);
                 var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
                 res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000), user: user[0], path: path });
+                
             } else {
                 res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
             }
         } else {
             res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
         }
-    } catch (error) {        
+    } catch (error) {   
         res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
     }
 });

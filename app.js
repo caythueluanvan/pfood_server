@@ -5,12 +5,13 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 var cors = require('cors');
 
+
 var indexRouter = require('./routes/index');
 var userRouter = require('./routes/user');
 
 var adminRouter = require('./routes/admin');
 var partnerRouter = require('./routes/partner');
-
+var recommendRouter = require('./routes/recommend');
 var app = express();
 
 app.use(cors());
@@ -20,11 +21,12 @@ app.set('view engine', 'jade');
 
 app.use(logger('dev'));
 app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
+app.use('/', recommendRouter);
 app.use('/user', userRouter);
 app.use('/admin', adminRouter);
 app.use('/partner', partnerRouter);
