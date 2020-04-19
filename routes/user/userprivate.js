@@ -321,19 +321,27 @@ module.exports = (router) => {
         let result = {status: true,message:"Thành công"};
         let sql = 'select *  from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
         let rs = await dbs.execute(sql)
-        let sql1
-        if(rs[0].amount > req.body.amount){
-            sql1= 'update cart set amount = amount - ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+        if(rs.length > 0){
+            if(rs[0].amount > req.body.amount){
+                sql1= 'update cart set amount = amount - ' + req.body.amount + ' where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+            }
+            else{
+                sql1 = 'delete from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
+            }
+            let rs1 = await dbs.execute(sql1)
+            if(rs1.affectedRows = 0){
+                result.status = false 
+                result.message = rs1.message
+            }
+            
         }
         else{
-            sql1 = 'delete from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
-        }
-        let rs1 = await dbs.execute(sql1)
-        if(rs1.affectedRows = 0){
             result.status = false 
             result.message = rs1.message
         }
+
         res.json(result)
+        
     });
 
     router.get('/cart/:CustomerID', async (req, res) => {
