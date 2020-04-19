@@ -127,8 +127,8 @@ module.exports = (router) => {
         res.json(rs)
     });
 
-    router.get('/products/:SearchText/:CityID', async (req, res) => {
-        sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 and (p.PartnerName like "%'+req.params.SearchText+'%" or i.ItemName like "%' +req.params.SearchText+ '%") and p.CItyID = "' +req.params.CityID+ '"'
+    router.post('/products/search', async (req, res) => {
+        sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 and (p.PartnerName like "%'+req.body.SearchText+'%" or i.ItemName like "%' +req.body.SearchText+ '%") and p.CItyID = "' +req.body.CityID+ '"'
         let rs = await dbs.execute(sql);
         
         res.json(rs)
