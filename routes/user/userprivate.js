@@ -309,7 +309,7 @@ module.exports = (router) => {
                 }
             }
             else{
-                res.json({status:repeat, message: 'not sam partner'})
+                res.json({status:false, message: 'repeate'})
             }
         }
 
