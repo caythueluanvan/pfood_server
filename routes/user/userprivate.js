@@ -355,4 +355,15 @@ module.exports = (router) => {
         }
         
     });
+
+    router.get('/cart/:CustomerID/delete', async (req, res) => {
+        let result = {status: true,message:"Thành công"};
+        let sql = 'DELETE FROM cart WHERE CustomerID  = "' + req.params.CustomerID + '"'
+        let rs = await dbs.execute(sql);
+        if(rs1.affectedRows = 0){
+            result.status = false 
+            result.message = rs1.message
+        }
+        res.json(result)
+    });
 };
