@@ -266,6 +266,7 @@ module.exports = (router) => {
     });
 
     router.post('/product/addToCart', async (req, res) => {
+        console.log(req.body)
         let result = {status: true,message:"Thành công"};
 
         let sql = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
@@ -360,9 +361,9 @@ module.exports = (router) => {
         let result = {status: true,message:"Thành công"};
         let sql = 'DELETE FROM cart WHERE CustomerID  = "' + req.params.CustomerID + '"'
         let rs = await dbs.execute(sql);
-        if(rs1.affectedRows = 0){
+        if(rs.affectedRows = 0){
             result.status = false 
-            result.message = rs1.message
+            result.message = rs.message
         }
         res.json(result)
     });
