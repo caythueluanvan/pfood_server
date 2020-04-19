@@ -61,6 +61,7 @@ module.exports = (router) => {
         } else {
             res.json({ type: 'fail', msg: 'Thêm không thành công !' });
         }
+
     });
 
     router.get('/product/:partnerid', async (req, res) => {
@@ -91,7 +92,7 @@ module.exports = (router) => {
             await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
         }
         if (rs.affectedRows > 0) {
-            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?`, [req.body.ItemID]);            
+            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?`, [req.body.ItemID]);
             res.json({ type: 'success', msg: 'Sửa thành công !', product: rsEdit });
         } else {
             res.json({ type: 'fail', msg: 'Sửa không thành công !' });
@@ -166,5 +167,31 @@ module.exports = (router) => {
             rsItemsActive: rsItemsActive[0].count,
             rsSourceOfItemsActive: rsSourceOfItemsActive[0].count, rsSourceOfItemsOfYear: rsSourceOfItemsOfYear[0].count, rsOrderActive: rsOrderActive[0].count, rsOrderOfYear: rsOrderOfYear[0].count, rsTotal: rsTotal[0].total, rsTotalByMonth: rsTotalByMonth, rsTotalByMonthLastYear: rsTotalByMonthLastYear, rsPercentByCategory: rsPercentByCategory, rsLatestSourceOfItem: rsLatestSourceOfItem, rsLatestOrder: rsLatestOrder
         });
+    });
+
+    router.get('/order/:partnerid', async (req, res) => {
+        let rs = await dbs.execute('SELECT distinct o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE partnerid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.params.partnerid]);
+        res.json(rs);
+    });
+
+    router.put('/order', async (req, res) => {
+        if(req.body.status==3){
+            let rs = await dbs.execute('select sourceofitemsid, total from orderdetail where orderid = ?', [req.body.orderid]);
+            let sql = 'update sourceofitems set summary = summary + case ';
+            sqlwhere = []
+            rs.forEach(e => {
+                sql = sql + ` when SourceOfItemsID = '${e.sourceofitemsid}' then ${e.total}`
+                sqlwhere.push(`'${e.sourceofitemsid}'`);
+            });
+            sql = sql + ` end where SourceOfItemsID in (${sqlwhere.toString()})`;
+             await dbs.execute(sql, []);
+        }
+        let rs = await dbs.execute('update `order` set statusid = ? where orderid = ?', [req.body.status, req.body.orderid]);
+        if (rs.affectedRows > 0) {
+            let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.body.orderid]);
+            res.json({ type: 'success', msg: 'Cập nhật trạng thái thành công !', order: rsOrder });
+        } else {
+            res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
+        }
     });
 };
