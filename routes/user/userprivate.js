@@ -157,11 +157,21 @@ module.exports = (router) => {
     });
 
     router.get('/products/qnadetail/:SourceOfItemsID/:limit/:offset', async (req, res) => {
-        sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.question, r.answer, r.CreateDate FROM qna r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
-
+        let result =await []
+        sqlListRate = 'SELECT r.ID , c.CustomerName, c.CustomerUsername, r.question, r.CreateDate FROM qna r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
+        console.log(sqlListRate)
         let rs3 = await dbs.execute(sqlListRate);
-
-        res.json(rs3)
+        
+        const promises = rs3.map(async a => {
+            let sqlListTL = 'select r.ID , c.CustomerName, c.CustomerUsername, r.anser, r.CreateDate from qnaDetail r, customer c where c.CustomerID = r.CustomerID and qnaid = "' + a.ID + '"'
+            let rs4 = await dbs.execute(sqlListTL);
+            
+            return {
+                cauhoi: a,
+                traloi:rs4
+            }
+        })
+        res.json(await Promise.all(promises))
     });
 
     router.post('/products/isRate', async (req, res) => {
@@ -191,6 +201,18 @@ module.exports = (router) => {
         let id = uniqid();
         let result = {status: true,message:"Thành công"};
         sqlisRate = 'INSERT INTO qna(CustomerID, SourceOfItemsID, question, ID, CreateDate) VALUES ("'+req.body.CustomerID+'","'+req.body.SourceOfItemsID+'","'+req.body.question+'","'+id+'",now())'
+        let rs = await dbs.execute(sqlisRate);
+        if(rs.affectedRows = 0){
+            result.status = false 
+            result.message = rs.message
+        }
+        res.json(result)
+    });
+
+    router.post('/products/createqnadetail', async (req, res) => {
+        let id = uniqid();
+        let result = {status: true,message:"Thành công"};
+        sqlisRate = 'INSERT INTO qnadetail(CustomerID, anser, ID, CreateDate, QnAID) VALUES ("'+req.body.CustomerID+'","'+req.body.anser+'","'+id+'",now(), "' + req.body.QnAID +'")'
         let rs = await dbs.execute(sqlisRate);
         if(rs.affectedRows = 0){
             result.status = false 
