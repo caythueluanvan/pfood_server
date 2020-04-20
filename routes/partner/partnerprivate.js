@@ -175,6 +175,7 @@ module.exports = (router) => {
     });
 
     router.put('/order', async (req, res) => {
+        let dateUpdate = 'approvedate';
         if(req.body.status==3){
             let rs = await dbs.execute('select sourceofitemsid, total from orderdetail where orderid = ?', [req.body.orderid]);
             let sql = 'update sourceofitems set summary = summary + case ';
@@ -185,13 +186,22 @@ module.exports = (router) => {
             });
             sql = sql + ` end where SourceOfItemsID in (${sqlwhere.toString()})`;
              await dbs.execute(sql, []);
+             dateUpdate = 'rejectdate';
         }
-        let rs = await dbs.execute('update `order` set statusid = ? where orderid = ?', [req.body.status, req.body.orderid]);
+        
+
+        let rs = await dbs.execute('update `order` set statusid = ?, ?? = now() where orderid = ? ', [req.body.status, dateUpdate, req.body.orderid]);
         if (rs.affectedRows > 0) {
             let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.body.orderid]);
             res.json({ type: 'success', msg: 'Cập nhật trạng thái thành công !', order: rsOrder });
         } else {
             res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
         }
+    });
+    router.get('/detailorderbyid', async (req, res) => {          
+            let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName,c.CustomerPhone, o.ordernote, o.ship,o.shipaddress, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
+            let rsOrderDetail = await dbs.execute('SELECT o.orderid,i.ItemName, si.SourceOfItemsID,si.Image, od.total, od.price, od.Description FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
+            res.json({ order: rsOrder[0], orderDetail: rsOrderDetail });
+      
     });
 };

@@ -8,6 +8,30 @@ module.exports = (router) => {
     // auth(router, '/admin');
     // API Partner
     //count partner
+    router.get('/homepage', async (req, res) => {
+        let rsItemsActive = await dbs.execute(`SELECT count(*) as count FROM items WHERE STATUSid = 1`, []);
+
+        let rsSourceOfItemsActive = await dbs.execute(`SELECT count(*) as count FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and s.EndTime >= now() and year(s.EndTime) =?`, [req.headers.year]);
+        let rsSourceOfItemsOfYear = await dbs.execute(`SELECT count(*) as count FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and year(s.EndTime) =?`, [req.headers.year]);
+        let rsOrderActive = await dbs.execute('select count(DISTINCT od.orderid) as count from orderdetail od, `order` o where o.orderid = od.orderid and o.statusid = 1 and od.SourceOfItemsID in (SELECT SourceOfItemsID FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and year(o.adddate) =?)', [req.headers.year]);
+        let rsOrderOfYear = await dbs.execute('select count(DISTINCT od.orderid) as count from orderdetail od,`order` o where o.orderid = od.orderid and od.SourceOfItemsID in (SELECT SourceOfItemsID FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID and year(o.adddate) =?)', [req.headers.year]);
+        let rsTotal = await dbs.execute('SELECT ifnull(sum( od.Total*s.Price), 0) as total FROM sourceofitems s, items i, orderdetail od, `order` o WHERE o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID and o.statusid !=3 and year(o.adddate) = ?', [req.headers.year]);
+
+        let rsTotalByMonth = await dbs.execute('select count from (select a.month as month, sum(a.count) as count from (select 1 as month, 0 count union select 2 as month, 0 count union select 3 as month, 0 count  union select 4 as month, 0 count union select 5 as month, 0 count union select 6 as month, 0 count union select 7 as month, 0 count union select 8 as month, 0 count union select 9 as month, 0 count union select 10 as month, 0 count union select 11 as month, 0 count union select 12 as month, 0 COUNT union SELECT month(o.addDate) month, sum( od.Total*s.Price) count FROM sourceofitems s, items i, orderdetail od, `order` o WHERE o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID and o.statusid !=3 and year(s.EndTime) =? group by month(o.addDate)) a group by a.month) a ', [req.headers.year]);
+
+        let rsTotalByMonthLastYear = await dbs.execute('select count from (select a.month as month, sum(a.count) as count from (select 1 as month, 0 count union select 2 as month, 0 count union select 3 as month, 0 count union select 4 as month, 0 count union select 5 as month, 0 count union select 6 as month, 0 count union select 7 as month, 0 count union select 8 as month, 0 count union select 9 as month, 0 count union select 10 as month, 0 count union select 11 as month, 0 count union select 12 as month, 0 COUNT union SELECT month(o.addDate) month, sum( od.Total*s.Price) count FROM sourceofitems s, items i, orderdetail od, `order` o WHERE o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID and o.statusid !=3 and year(s.EndTime) =? group by month(o.addDate)) a group by a.month) a', [req.headers.year - 1]);
+
+        let rsPercentByCategory = await dbs.execute('select CategoryName as name, total, round(total / (SUM(total) OVER (ORDER BY null))* 100) as percent from (SELECT c.CategoryName,sum(od.Total*s.Price) total FROM sourceofitems s, items i, orderdetail od, `order` o, category c WHERE c.CategoryID = i.CategoryID and o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID and o.statusid !=3 and year(s.EndTime) = ? group by i.CategoryID) a', [req.headers.year]);
+
+        let rsLatestSourceOfItem = await dbs.execute(`SELECT s.SourceOfItemsID, s.StartTime, s.EndTime, i.ItemName, i.ItemImage FROM sourceofitems s, items i WHERE s.ItemID = i.ItemID order by EndTime desc limit 5`, []);
+
+        let rsLatestOrder = await dbs.execute('SELECT o.orderid, o.adddate, c.CustomerName,stt.StatusID, stt.StatusName, sum( od.Total*s.Price) as total FROM sourceofitems s, items i, orderdetail od, `order` o, customer c, status stt WHERE o.statusid = stt.StatusID and c.CustomerID = o.customerid and o.OrderID = od.OrderID and s.ItemID = i.ItemID and od.SourceOfItemsID = s.SourceOfItemsID group by o.orderid, o.adddate, c.CustomerName, stt.StatusName order by adddate desc limit 6', []);
+        res.json({
+            rsItemsActive: rsItemsActive[0].count,
+            rsSourceOfItemsActive: rsSourceOfItemsActive[0].count, rsSourceOfItemsOfYear: rsSourceOfItemsOfYear[0].count, rsOrderActive: rsOrderActive[0].count, rsOrderOfYear: rsOrderOfYear[0].count, rsTotal: rsTotal[0].total, rsTotalByMonth: rsTotalByMonth, rsTotalByMonthLastYear: rsTotalByMonthLastYear, rsPercentByCategory: rsPercentByCategory, rsLatestSourceOfItem: rsLatestSourceOfItem, rsLatestOrder: rsLatestOrder
+        });
+    });
+
     router.get('/countPartner', async (req, res) => {
         let rs = await dbs.execute('select count(*) as count from partner');
         res.json(rs);
