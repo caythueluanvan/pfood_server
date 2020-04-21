@@ -53,21 +53,22 @@ router.post('/testreject', async (req, res, next) => {
 router.post('/signin', async function (req, res) {
   let username = req.body.username;
   let password = req.body.password;
-
+  console.log(username);
+  
   try {
     let user = await dbs.execute('select * from customer where CustomerUsername = ?', [username]);
+    
     if (user[0]) {
       if (user[0].CountReject >= 5) {
+        
         let locktime = await dbs.execute(`select paramvalue from parameters where paramname = 'lock_time'`, []);
         let fromReject = new Date(user[0].LockStartTime);
         let toReject = new Date(user[0].LockStartTime);
         toReject.setDate(fromReject.getDate() + locktime[0].paramvalue)
-        console.log(toReject.getDate());
 
         if (toReject < new Date()) {
           await dbs.execute('update customer set CountReject = 0, LockStartTime = null where CustomerUsername = ?', [username]);
           let rs = bcrypt.compareSync(password, user[0].CustomerPassword);
-          console.log(rs);
 
           if (rs) {
             delete user[0].CustomerPassword;
@@ -80,6 +81,17 @@ router.post('/signin', async function (req, res) {
         } else {
           let a = Math.ceil((toReject - new Date()) / (24 * 60 * 60 * 1000));
           res.json({ success: false, msg: 'Tài khoản của bạn bị khóa trong ' + a + ' ngày !' });
+        }
+      } else {
+        let rs = bcrypt.compareSync(password, user[0].CustomerPassword);
+
+        if (rs) {
+          delete user[0].CustomerPassword;
+          let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [username]);
+          var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
+          res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000), user: user[0], path: path });
+        } else {
+          res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
         }
       }
 
