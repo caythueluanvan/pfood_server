@@ -12,6 +12,8 @@ var userRouter = require('./routes/user');
 var adminRouter = require('./routes/admin');
 var partnerRouter = require('./routes/partner');
 var recommendRouter = require('./routes/recommend');
+var CronJob = require('cron').CronJob;
+const job = require('./utils/cron');
 var app = express();
 
 app.use(cors());
@@ -35,6 +37,10 @@ app.use(function(req, res, next) {
   next(createError(404));
 });
 
+var cronGenSourceOfItem = new CronJob('01 00 00 * * *', function() {
+  job.genSourceOfItem();
+ });
+ cronGenSourceOfItem.start();
 // error handler
 app.use(function(err, req, res, next) {
   // set locals, only providing error in development
