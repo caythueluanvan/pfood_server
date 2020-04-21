@@ -170,7 +170,7 @@ module.exports = (router) => {
     });
 
     router.get('/order/:partnerid', async (req, res) => {
-        let rs = await dbs.execute('SELECT distinct o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE partnerid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.params.partnerid]);
+        let rs = await dbs.execute('SELECT distinct o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE i.partnerid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.params.partnerid]);
         res.json(rs);
     });
 
