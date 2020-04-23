@@ -11,14 +11,16 @@ router.post('/', [
     // check('username', 'Tên đăng nhập không được để trống !').notEmpty(),
     check('phone', 'Dộ dài số điện thoại không hợp lệ !').isLength({ min: 10 }),
     body('email').custom(async value => {
-        let user = await dbs.execute('select * from partner where partneremail = ?', [value])
-        if (user[0]) {
+        let user = await dbs.execute('select * from customer where customeremail = ?', [value])
+        let partner = await dbs.execute('select * from partner where partneremail = ?', [value])
+        if (user[0] || partner[0]) {
             return Promise.reject('Địa chỉ email đã tồn tại !');
         }
     }),
     body('phone').custom(async value => {
-        let user = await dbs.execute('select * from partner where partnerphone = ?', [value])
-        if (user[0]) {
+        let user = await dbs.execute('select * from customer where customerphone = ?', [value])
+        let partner = await dbs.execute('select * from partner where partnerphone = ?', [value])
+        if (user[0] || partner[0]) {
             return Promise.reject('Số dt đã tồn tại !');
         }
     }),
@@ -35,12 +37,12 @@ router.post('/', [
     //     }
     //     return Promise.reject('Tài khoản khách hàng của bạn chưa tồn tại!');
     // }),
-    body('name').custom(async value => {
-        let user = await dbs.execute('select * from partner where partnername = ?', [value])
-        if (user[0]) {
-            return Promise.reject('Tên đối tác của bạn đã tồn tại!');
-        }
-    })
+    // body('name').custom(async value => {
+    //     let partner = await dbs.execute('select * from partner where partnername = ?', [value])
+    //     if (user[0]) {
+    //         return Promise.reject('Tên đối tác của bạn đã tồn tại!');
+    //     }
+    // })
 ], async (req, res) => {
 
     try {

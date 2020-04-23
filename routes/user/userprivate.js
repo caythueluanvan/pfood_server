@@ -39,7 +39,7 @@ module.exports = (router) => {
 
     router.get('/history/:customer_id', async (req, res) => {
         sql = 'select x.* from (select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.addDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.rejectDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.approveDate is not null)x order by x.CreateDate desc '
-        console.log(sql)
+        // console.log(sql)
         let rs = await dbs.execute(sql)
         res.json(rs);
         
@@ -47,7 +47,7 @@ module.exports = (router) => {
 
     router.get('/historyDetail/:order_id', async (req, res) => {
         let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, s.Image, s.Description  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
-        console.log(sql)
+        // console.log(sql)
         let rs1 = await dbs.execute(sql);
         let sql2 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID)'
         let rs2 = await dbs.execute(sql2);
@@ -61,12 +61,12 @@ module.exports = (router) => {
         let sql2 = 'update customer set CountReject  = CountReject + 1 where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
         let rs2= await dbs.execute(sql2);
         let sql = 'update `order` set statusID = 3, rejectDate = now() where orderid = "'+req.params.order_id+'"'
-        console.log(sql)
+        // console.log(sql)
         let rs= await dbs.execute(sql);
         if(rs.changedRows > 0){
             let sql6 = 'select * from orderdetail where OrderID = "' + req.params.order_id + '"'
             let rs6 = await dbs.execute(sql6);
-            console.log(rs6)
+            // console.log(rs6)
             rs6.forEach(o => {
                 let sql7 = 'update sourceofitems set Summary = Summary + ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
                 let rs7 = dbs.execute(sql7);
@@ -122,7 +122,7 @@ module.exports = (router) => {
         }
         sql = sql + ' limit ' + req.params.limit + ' offset ' + req.params.offset;
 
-        console.log(sql)
+        // console.log(sql)
         let rs = await dbs.execute(sql);
         res.json(rs)
     });
@@ -159,7 +159,7 @@ module.exports = (router) => {
     router.get('/products/qnadetail/:SourceOfItemsID/:limit/:offset', async (req, res) => {
         let result =await []
         sqlListRate = 'SELECT r.ID , c.CustomerName, c.CustomerUsername, r.question, r.CreateDate FROM qna r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
-        console.log(sqlListRate)
+        // console.log(sqlListRate)
         let rs3 = await dbs.execute(sqlListRate);
         
         const promises = rs3.map(async a => {
@@ -176,7 +176,7 @@ module.exports = (router) => {
 
     router.post('/products/isRate', async (req, res) => {
         sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.CustomerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.body.SourceOfItemsID+'")'
-        console.log(sqlisRate)
+        // console.log(sqlisRate)
         let result = false
         let rs = await dbs.execute(sqlisRate);
         if(rs[0].tong > 0){
@@ -266,11 +266,11 @@ module.exports = (router) => {
             orderDetail.map((o) => {
 
                 let sql2 = 'INSERT INTO orderdetail(OrderID, SourceOfItemsID, Total, Price, Ship, Description) VALUES ("' + id +'", "'+ o.SourceOfItemsID +'", "'+ o.Total +'", "'+ o.Price +'", "'+ o.Ship +'", "'+ o.Description +'")'
-                console.log(sql2)
+                // console.log(sql2)
                 let rs2 = dbs.execute(sql2);
 
                 let sql7 = 'update sourceofitems set Summary = Summary - ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
-                console.log(sql7)
+                // console.log(sql7)
                 let rs7 = dbs.execute(sql7);
 
                 if(rs2.affectedRows = 0){
@@ -288,7 +288,7 @@ module.exports = (router) => {
     });
 
     router.post('/product/addToCart', async (req, res) => {
-        console.log(req.body)
+        // console.log(req.body)
         let result = {status: true,message:"Thành công"};
 
         let sql = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
