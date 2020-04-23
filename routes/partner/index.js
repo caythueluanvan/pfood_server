@@ -8,7 +8,7 @@ const config = require('../../utils/config');
 const privateRoutePartner = require('./partnerprivate');
 /* Add User */
 router.post('/', [
-    check('username', 'Tên đăng nhập không được để trống !').notEmpty(),
+    // check('username', 'Tên đăng nhập không được để trống !').notEmpty(),
     check('phone', 'Dộ dài số điện thoại không hợp lệ !').isLength({ min: 10 }),
     body('email').custom(async value => {
         let user = await dbs.execute('select * from partner where partneremail = ?', [value])
@@ -22,19 +22,19 @@ router.post('/', [
             return Promise.reject('Số dt đã tồn tại !');
         }
     }),
-    body('username').custom(async value => {
-        let user = await dbs.execute('select * from customer c, partner p where c.customerid = p.customerid and customerusername = ?', [value])
-        if (user[0]) {
-            return Promise.reject('Tài khoản đối tác của bạn đã tồn tại!');
-        }
-    }),
-    body('username').custom(async (value, { req }) => {
-        let user = await dbs.execute('select * from customer where customerusername = ?', [value])
-        if (user[0]) { 
-            return true;
-        }
-        return Promise.reject('Tài khoản khách hàng của bạn chưa tồn tại!');
-    }),
+    // body('username').custom(async value => {
+    //     let user = await dbs.execute('select * from customer c, partner p where c.customerid = p.customerid and customerusername = ?', [value])
+    //     if (user[0]) {
+    //         return Promise.reject('Tài khoản đối tác của bạn đã tồn tại!');
+    //     }
+    // }),
+    // body('username').custom(async (value, { req }) => {
+    //     let user = await dbs.execute('select * from customer where customerusername = ?', [value])
+    //     if (user[0]) { 
+    //         return true;
+    //     }
+    //     return Promise.reject('Tài khoản khách hàng của bạn chưa tồn tại!');
+    // }),
     body('name').custom(async value => {
         let user = await dbs.execute('select * from partner where partnername = ?', [value])
         if (user[0]) {
@@ -50,10 +50,10 @@ router.post('/', [
             
             res.status(200).json({ errors: errors.array() });
         } else {
-            let customer_id = await dbs.execute(`select customerid from customer where customerusername = ?`, [req.body.username]);
-            let sql = `insert into partner(partnerid, customerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, statusid, ship) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            // let customer_id = await dbs.execute(`select customerid from customer where customerusername = ?`, [req.body.username]);
+            let sql = `insert into partner(partnerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, statusid, ship) values( ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             let partner_id = await dbs.getNextID('partner', 'partnerid');
-            let bind = [partner_id, customer_id[0].customerid, req.body.name, req.body.address, req.body.email, req.body.phone, req.body.description, req.body.city, 0, req.body.ship];
+            let bind = [partner_id, req.body.name, req.body.address, req.body.email, req.body.phone, req.body.description, req.body.city, 0, req.body.ship];
             let rs = await dbs.execute(sql, bind);
             res.json(rs)
         }
