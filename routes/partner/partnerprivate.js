@@ -51,12 +51,12 @@ module.exports = (router) => {
         if (req.body.scheduleDay.length) {
             let bind = [];
             req.body.scheduleDay.forEach(e => {
-                bind.push([productId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice])
+                bind.push([productId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
             });
-            await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price) values ?`, [bind]);
+            await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
         }
         if (rs.affectedRows > 0) {
-            let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?  GROUP BY i.itemid`, [productId])
+            let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?  GROUP BY i.itemid`, [productId])
             res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
         } else {
             res.json({ type: 'fail', msg: 'Thêm không thành công !' });
@@ -65,7 +65,7 @@ module.exports = (router) => {
     });
 
     router.get('/product/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage, i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and PartnerID = ? GROUP BY i.itemid`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage, i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and PartnerID = ? GROUP BY i.itemid`, [req.params.partnerid]);
         res.json(rs);
     });
 
@@ -84,15 +84,15 @@ module.exports = (router) => {
         if (req.body.scheduleDay != null && req.body.scheduleDay != []) {
             let bind = [];
             req.body.scheduleDay.forEach(e => {
-                bind.push([req.body.ItemID, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice])
+                bind.push([req.body.ItemID, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
             });
             await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
-            await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price) values ?`, [bind]);
+            await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
         } else {
             await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
         }
         if (rs.affectedRows > 0) {
-            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?`, [req.body.ItemID]);
+            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?`, [req.body.ItemID]);
             res.json({ type: 'success', msg: 'Sửa thành công !', product: rsEdit });
         } else {
             res.json({ type: 'fail', msg: 'Sửa không thành công !' });
@@ -176,7 +176,7 @@ module.exports = (router) => {
 
     router.put('/order', async (req, res) => {
         let dateUpdate = 'approvedate';
-        if(req.body.status==3){
+        if (req.body.status == 3) {
             let rs = await dbs.execute('select sourceofitemsid, total from orderdetail where orderid = ?', [req.body.orderid]);
             let sql = 'update sourceofitems set summary = summary + case ';
             sqlwhere = []
@@ -185,10 +185,10 @@ module.exports = (router) => {
                 sqlwhere.push(`'${e.sourceofitemsid}'`);
             });
             sql = sql + ` end where SourceOfItemsID in (${sqlwhere.toString()})`;
-             await dbs.execute(sql, []);
-             dateUpdate = 'rejectdate';
+            await dbs.execute(sql, []);
+            dateUpdate = 'rejectdate';
         }
-        
+
 
         let rs = await dbs.execute('update `order` set statusid = ?, ?? = now() where orderid = ? ', [req.body.status, dateUpdate, req.body.orderid]);
         if (rs.affectedRows > 0) {
@@ -198,10 +198,43 @@ module.exports = (router) => {
             res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
         }
     });
-    router.get('/detailorderbyid', async (req, res) => {          
-            let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName,c.CustomerPhone, o.ordernote, o.ship,o.shipaddress, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
-            let rsOrderDetail = await dbs.execute('SELECT o.orderid,i.ItemName, si.SourceOfItemsID,si.Image, od.total, od.price, od.Description FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
-            res.json({ order: rsOrder[0], orderDetail: rsOrderDetail });
-      
+    router.get('/detailorderbyid', async (req, res) => {
+        let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName,c.CustomerPhone, o.ordernote, o.ship,o.shipaddress, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
+        let rsOrderDetail = await dbs.execute('SELECT o.orderid,i.ItemName, si.SourceOfItemsID,si.Image, od.total, od.price, od.Description FROM items i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.ItemID = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
+        res.json({ order: rsOrder[0], orderDetail: rsOrderDetail });
+    });
+
+    router.get('/promotionproductadd/:partnerid', async (req, res) => {
+        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.ItemImage from items i  where i.statusid = 1 and i.itemid not in (select itemid from promotion where endtime > now()) and PartnerID = ?`, [req.params.partnerid]);
+        res.json(rs);
+    });
+
+    router.get('/promotiontype', async (req, res) => {
+        let rs = await dbs.execute(`select promotiontypeid, promotiontypename from promotiontype`, []);        
+        res.json(rs);
+    });
+
+    router.get('/promotioncondition', async (req, res) => {
+        let rs = await dbs.execute(`select conditionid, conditionname from promotioncondition`, []);
+        res.json(rs);
+    });
+
+    router.post('/promotion', async (req, res) => {
+        let item = req.body.item;
+        let bind = [];
+        item.forEach(e => {
+            bind.push([e, req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime])
+        });
+        let rs = await dbs.execute(`insert into promotion(itemid, promotiontypeid, promotionconditionid, starttime, endtime) values ?`, [bind]);
+        if (rs.affectedRows > 0) {
+            res.json({ type: 'success', msg: 'Cập nhật trạng thái thành công !' });
+        } else {
+            res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
+        }
+    });
+
+    router.get('/promotion/:partnerid', async (req, res) => {
+        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
+        res.json(rs);
     });
 };
