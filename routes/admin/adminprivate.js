@@ -107,7 +107,7 @@ module.exports = (router) => {
             await dbs.execute(`insert into customer(CustomerID, CustomerName, CustomerUsername, CustomerPassword, 
                 CustomerAddress, CustomerPhone, CustomerEmail, StatusID) values(?, ?, ?, ?, ?, ?, ?, ?)`, bind);
         }
-         await dbs.execute('update partner  set  StatusID = ?, where PartnerID =  ?', [req.body.StatusID, req.body.PartnerID]);
+         await dbs.execute('update partner  set  StatusID = ? where PartnerID =  ?', [req.body.StatusID, req.body.PartnerID]);
         res.json({ status: true, message: "thanh cong" })
     });
 
