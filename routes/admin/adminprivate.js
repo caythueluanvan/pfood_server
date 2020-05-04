@@ -86,7 +86,7 @@ module.exports = (router) => {
 
 
 
-            let content = "<b>Bạn đã đang ký làm đối tác của PFOOD thành công với thông tin truy cập như sau :</b><br>"
+            let content = "<b>Chúc mừng bạn đã đăng ký thành công trở thành đối tác của ứng dụng Pfood !</b><br>"
             content += "<p>username :" + rs5[0].PartnerEmail + "</p>"
             content += "<p>Password : " + id + "</p>"
             // send mail with defined transport objec
