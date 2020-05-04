@@ -85,7 +85,9 @@ module.exports = (router) => {
     router.put('/product', async (req, res) => {
         let bind = [req.body.ItemName, req.body.description, req.body.ItemImage, req.body.categoryID, req.body.ItemID];
         let rs = await dbs.execute(`update items set ItemName = ?, description = ?, ItemImage = ?, CategoryID = ? where ItemID = ?`, bind);
-        if (req.body.scheduleDay != null && req.body.scheduleDay != []) {
+        console.log(req.body.scheduleDay!= []);
+        
+        if (req.body.scheduleDay != null && req.body.scheduleDay.length) {
             let bind = [];
             req.body.scheduleDay.forEach(e => {
                 bind.push([req.body.ItemID, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
@@ -238,7 +240,7 @@ module.exports = (router) => {
     });
 
     router.get('/promotion/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
         res.json(rs);
     });
 };

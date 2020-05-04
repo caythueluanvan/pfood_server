@@ -16,24 +16,24 @@ router.post('/', [
     body('mail').custom(async value => {
         let user = await dbs.execute('select * from customer where CustomerEmail = ?', [value])
         if (user[0]) {
-            return Promise.reject('E-mail already in use');
+            return Promise.reject('E-mail đã tồn tại');
         }
     }),
     body('phone').custom(async value => {
         let user = await dbs.execute('select * from customer where CustomerPhone = ?', [value])
         if (user[0]) {
-            return Promise.reject('Phone number already in use');
+            return Promise.reject('Sdt đã tồn tại');
         }
     }),
     body('username').custom(async value => {
         let user = await dbs.execute('select * from customer where CustomerUsername = ?', [value])
         if (user[0]) {
-            return Promise.reject('Username already in use');
+            return Promise.reject('Tài khoản đã tồn tại');
         }
     }),
     body('pass2').custom((value, { req }) => {
         if (value !== req.body.pass) {
-            throw new Error('Password confirmation does not match password');
+            throw new Error('Mật khẩu nhập lại không khớp');
         }
         return true;
     })  
