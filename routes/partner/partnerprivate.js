@@ -44,22 +44,26 @@ module.exports = (router) => {
 
     router.post('/product', async (req, res) => {
 
-        let productId = await dbs.getNextID('items', 'itemid');
+        try {
+            let productId = await dbs.getNextID('items', 'itemid');
 
-        let bind = [productId, req.body.PartnerID, req.body.ItemName, req.body.category, req.body.description, req.body.img, 0]
-        let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, CategoryID, description, ItemImage, statusID) values(?,?,?,?,?,?,?)`, bind);
-        if (req.body.scheduleDay.length) {
-            let bind = [];
-            req.body.scheduleDay.forEach(e => {
-                bind.push([productId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
-            });
-            await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
-        }
-        if (rs.affectedRows > 0) {
-            let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?  GROUP BY i.itemid`, [productId])
-            res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
-        } else {
-            res.json({ type: 'fail', msg: 'Thêm không thành công !' });
+            let bind = [productId, req.body.PartnerID, req.body.ItemName, req.body.category, req.body.description, req.body.img, 0]
+            let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, CategoryID, description, ItemImage, statusID) values(?,?,?,?,?,?,?)`, bind);
+            if (req.body.scheduleDay.length) {
+                let bind = [];
+                req.body.scheduleDay.forEach(e => {
+                    bind.push([productId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
+                });
+                await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
+            }
+            if (rs.affectedRows > 0) {
+                let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?  GROUP BY i.itemid`, [productId])
+                res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
+            } else {
+                res.json({ type: 'fail', msg: 'Thêm không thành công !' });
+            }
+        } catch (error) {
+            res.json({ type: 'fail', msg: error });
         }
 
     });
@@ -81,7 +85,9 @@ module.exports = (router) => {
     router.put('/product', async (req, res) => {
         let bind = [req.body.ItemName, req.body.description, req.body.ItemImage, req.body.categoryID, req.body.ItemID];
         let rs = await dbs.execute(`update items set ItemName = ?, description = ?, ItemImage = ?, CategoryID = ? where ItemID = ?`, bind);
-        if (req.body.scheduleDay != null && req.body.scheduleDay != []) {
+        console.log(req.body.scheduleDay!= []);
+        
+        if (req.body.scheduleDay != null && req.body.scheduleDay.length) {
             let bind = [];
             req.body.scheduleDay.forEach(e => {
                 bind.push([req.body.ItemID, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
@@ -210,7 +216,7 @@ module.exports = (router) => {
     });
 
     router.get('/promotiontype', async (req, res) => {
-        let rs = await dbs.execute(`select promotiontypeid, promotiontypename from promotiontype`, []);        
+        let rs = await dbs.execute(`select promotiontypeid, promotiontypename from promotiontype`, []);
         res.json(rs);
     });
 
@@ -234,7 +240,7 @@ module.exports = (router) => {
     });
 
     router.get('/promotion/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
         res.json(rs);
     });
 };

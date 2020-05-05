@@ -51,12 +51,10 @@ router.post('/testreject', async (req, res, next) => {
 });
 
 router.post('/signin', async function (req, res) {
-  let username = req.body.username;
-  let password = req.body.password;
-  console.log(username);
-  
+  let phone = req.body.phone;
+  let password = req.body.password;  
   try {
-    let user = await dbs.execute('select * from customer where CustomerUsername = ?', [username]);
+    let user = await dbs.execute('select * from customer where CustomerPhone = ?', [phone]);
     
     if (user[0]) {
       if (user[0].CountReject >= 5) {
@@ -67,12 +65,12 @@ router.post('/signin', async function (req, res) {
         toReject.setDate(fromReject.getDate() + locktime[0].paramvalue)
 
         if (toReject < new Date()) {
-          await dbs.execute('update customer set CountReject = 0, LockStartTime = null where CustomerUsername = ?', [username]);
+          await dbs.execute('update customer set CountReject = 0, LockStartTime = null where CustomerPhone = ?', [phone]);
           let rs = bcrypt.compareSync(password, user[0].CustomerPassword);
 
           if (rs) {
             delete user[0].CustomerPassword;
-            let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [username]);
+            let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerPhone =  ?', [phone]);
             var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
             res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000), user: user[0], path: path });
           } else {
@@ -87,7 +85,7 @@ router.post('/signin', async function (req, res) {
 
         if (rs) {
           delete user[0].CustomerPassword;
-          let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [username]);
+          let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerPhone =  ?', [phone]);
           var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
           res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000), user: user[0], path: path });
         } else {
