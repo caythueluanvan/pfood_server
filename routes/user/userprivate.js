@@ -259,7 +259,7 @@ module.exports = (router) => {
         
         let id = uniqid();
         let result = {status: true,message:id };
-        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID, PartnerID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 1, "'+ req.body.PartnerID +'")'
+        let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID, PartnerID) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 6, "'+ req.body.PartnerID +'")'
         let rs = await dbs.execute(sql);
         if(rs.affectedRows > 0){
             let orderDetail = req.body.orderDetail
