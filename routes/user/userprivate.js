@@ -39,16 +39,21 @@ module.exports = (router) => {
 
     router.get('/history/:customer_id', async (req, res) => {
         sql = 'select x.* from (select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.addDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.rejectDate is not null union all select o.OrderID,o.StatusID,s.StatusName,o.addDate CreateDate, o.ship, o.shipAddress, o.OrderNote,o.OrderPayment, o.PartnerID, p.PartnerName from `order` o, status s, partner p where p.PartnerID = o.PartnerID and s.StatusID = o.StatusID and o.customerID = "'+req.params.customer_id+'" and o.approveDate is not null)x order by x.CreateDate desc '
-        console.log(sql)
+        // console.log(sql)
         let rs = await dbs.execute(sql)
         res.json(rs);
         
     });
 
     router.get('/historyDetail/:order_id', async (req, res) => {
+<<<<<<< HEAD
         let sql3 = ''
         let rs3 = ''
         let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, s.Image, s.Description, o.status_id status_now  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
+=======
+        let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, i.ItemImage as Image, i.description as Description, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= o.adddate and prm.EndTime >= o.adddate) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.ItemID = i.ItemID and prm.StartTime <= o.adddate and prm.EndTime >= o.adddate) as typename, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= o.adddate and prm.EndTime >= o.adddate) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.ItemID = i.ItemID and prm.StartTime <= o.adddate and prm.EndTime >= o.adddate) as conditionname  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
+        // console.log(sql)
+>>>>>>> 1295bcae43f30cce5ac21043cb2477936f335a54
         let rs1 = await dbs.execute(sql);
         let sql2 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID)'
         let rs2 = await dbs.execute(sql2);
@@ -62,12 +67,12 @@ module.exports = (router) => {
         let sql2 = 'update customer set CountReject  = CountReject + 1 where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
         let rs2= await dbs.execute(sql2);
         let sql = 'update `order` set statusID = 3, rejectDate = now() where orderid = "'+req.params.order_id+'"'
-        console.log(sql)
+        // console.log(sql)
         let rs= await dbs.execute(sql);
         if(rs.changedRows > 0){
             let sql6 = 'select * from orderdetail where OrderID = "' + req.params.order_id + '"'
             let rs6 = await dbs.execute(sql6);
-            console.log(rs6)
+            // console.log(rs6)
             rs6.forEach(o => {
                 let sql7 = 'update sourceofitems set Summary = Summary + ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
                 let rs7 = dbs.execute(sql7);
@@ -99,7 +104,7 @@ module.exports = (router) => {
     });
 
     router.get('/products/:city/:shop/:type/:catalog/:limit/:offset', async (req, res) => {
-        let sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1'
+        let sql = 'select i.ItemName, s.SourceOfItemsID, s.ItemID, s.Summary, i.ItemImage as Image, i.description as Description, s.Price, s.StartTime, s.EndTime, s.FeeID, s.view, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1'
         
         if(req.params.city != 'all'){
             sql = sql + ' and p.CItyID = ' + req.params.city
@@ -123,13 +128,13 @@ module.exports = (router) => {
         }
         sql = sql + ' limit ' + req.params.limit + ' offset ' + req.params.offset;
 
-        console.log(sql)
+        // console.log(sql)
         let rs = await dbs.execute(sql);
         res.json(rs)
     });
 
     router.post('/products/search', async (req, res) => {
-        sql = 'select i.ItemName, s.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 and (p.PartnerName like "%'+req.body.SearchText+'%" or i.ItemName like "%' +req.body.SearchText+ '%") and p.CItyID = "' +req.body.CityID+ '"'
+        sql = 'select i.ItemName, s.SourceOfItemsID, s.ItemID, s.Summary, i.ItemImage as Image, i.description as Description, s.Price, s.StartTime, s.EndTime, s.FeeID, s.view, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 and (p.PartnerName like "%'+req.body.SearchText+'%" or i.ItemName like "%' +req.body.SearchText+ '%") and p.CItyID = "' +req.body.CityID+ '"'
         let rs = await dbs.execute(sql);
         
         res.json(rs)
@@ -137,7 +142,7 @@ module.exports = (router) => {
 
     
     router.get('/products/:SourceOfItemsID', async (req, res) => {
-        sql = 'select i.ItemName, s.*, p.* from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
+        sql = 'select i.ItemName, s.SourceOfItemsID, s.ItemID, s.Summary, i.ItemImage as Image, i.description as Description, s.Price, s.StartTime, s.EndTime, s.FeeID, s.view, p.*, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from sourceofitems s, items i, partner p  where s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlStartOfPartner = 'select avg(rate) as star, sum(likes) as likes from rate where SourceOfItemsID = "' + req.params.SourceOfItemsID + '"'
         sqlListRate = 'SELECT c.CustomerName, c.CustomerUsername, r.rate, r.Comment, r.CreateDate FROM rate r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc limit 3'
         let rs = await dbs.execute(sql);
@@ -160,7 +165,7 @@ module.exports = (router) => {
     router.get('/products/qnadetail/:SourceOfItemsID/:limit/:offset', async (req, res) => {
         let result =await []
         sqlListRate = 'SELECT r.ID , c.CustomerName, c.CustomerUsername, r.question, r.CreateDate FROM qna r, sourceofitems s, customer c WHERE r.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = r.CustomerID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.params.SourceOfItemsID+'") order by CreateDate desc  limit ' + req.params.limit + ' offset ' + req.params.offset
-        console.log(sqlListRate)
+        // console.log(sqlListRate)
         let rs3 = await dbs.execute(sqlListRate);
         
         const promises = rs3.map(async a => {
@@ -177,7 +182,7 @@ module.exports = (router) => {
 
     router.post('/products/isRate', async (req, res) => {
         sqlisRate = 'SELECT count(*) as tong from orderdetail d, `order` o, sourceofitems s where o.OrderID = d.OrderID and o.customerID = "'+req.body.CustomerID+'" and s.SourceOfItemsID = d.SourceOfItemsID and s.ItemID in (select DISTINCT ItemID from sourceofitems WHERE SourceOfItemsID ="'+req.body.SourceOfItemsID+'")'
-        console.log(sqlisRate)
+        // console.log(sqlisRate)
         let result = false
         let rs = await dbs.execute(sqlisRate);
         if(rs[0].tong > 0){
@@ -267,11 +272,11 @@ module.exports = (router) => {
             orderDetail.map((o) => {
 
                 let sql2 = 'INSERT INTO orderdetail(OrderID, SourceOfItemsID, Total, Price, Ship, Description) VALUES ("' + id +'", "'+ o.SourceOfItemsID +'", "'+ o.Total +'", "'+ o.Price +'", "'+ o.Ship +'", "'+ o.Description +'")'
-                console.log(sql2)
+                // console.log(sql2)
                 let rs2 = dbs.execute(sql2);
 
                 let sql7 = 'update sourceofitems set Summary = Summary - ' + o.Total + ' where SourceOfItemsID = "' + o.SourceOfItemsID + '"'
-                console.log(sql7)
+                // console.log(sql7)
                 let rs7 = dbs.execute(sql7);
 
                 if(rs2.affectedRows = 0){
@@ -289,7 +294,7 @@ module.exports = (router) => {
     });
 
     router.post('/product/addToCart', async (req, res) => {
-        console.log(req.body)
+        // console.log(req.body)
         let result = {status: true,message:"Thành công"};
 
         let sql = 'select count(*) as tong from cart where CustomerID = "'+req.body.CustomerID+'" and SourceOfItemsID = "' + req.body.SourceOfItemsID + '"'
@@ -369,7 +374,7 @@ module.exports = (router) => {
 
     router.get('/cart/:CustomerID', async (req, res) => {
         
-        let sql = 'select i.ItemName, c.amount, s.* from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
+        let sql = 'select i.ItemName, c.amount, s.SourceOfItemsID, s.ItemID, s.Summary, i.ItemImage as Image, i.description as Description, s.Price, s.StartTime, s.EndTime, s.FeeID, s.view, (select prm.Promotiontypeid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotionconditionid from promotion prm where prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.ItemID = i.ItemID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID  and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 '
         let rs2 = await dbs.execute(sql);
         if(rs2.length > 0){
         let sql1 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from cart c, sourceofitems s, items i, partner p  where c.SourceOfItemsID = s.SourceOfItemsID and c.CustomerID = "'+req.params.CustomerID+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID and s.EndTime >= now() and s.StartTime <= now() and p.statusID = 1 and i.StatusID = 1 )'

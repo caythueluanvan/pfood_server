@@ -15,6 +15,7 @@ var recommendRouter = require('./routes/recommend');
 var CronJob = require('cron').CronJob;
 const job = require('./utils/cron');
 var app = express();
+const dbs = require('./utils/dbs');
 
 app.use(cors());
 // view engine setup
@@ -26,6 +27,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(async (req, res, next) => {
+  await dbs.execute('update `Order` set StatusID=3, rejectDate = now(), note=? where TIME_TO_SEC(timediff(DATE_ADD(`addDate`, INTERVAL (select paramvalue from parameters where paramname = ?)  minute), now())) < 0 and StatusID in (1, 6);',['Đơn hàng quá thời gian !','order_cancel_time']);    
+  return next();
+});
 
 app.use('/', indexRouter);
 app.use('/', recommendRouter);
