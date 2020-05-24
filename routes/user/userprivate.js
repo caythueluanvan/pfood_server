@@ -46,8 +46,9 @@ module.exports = (router) => {
     });
 
     router.get('/historyDetail/:order_id', async (req, res) => {
-        let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, s.Image, s.Description  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
-        console.log(sql)
+        let sql3 = ''
+        let rs3 = ''
+        let sql = 'select i.ItemName, c.total, c.price, s.SourceOfItemsID, s.ItemID, s.Image, s.Description, o.status_id status_now  from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID'
         let rs1 = await dbs.execute(sql);
         let sql2 = 'select * from partner  where PartnerID in (select distinct p.PartnerID from `order` o, orderdetail c, sourceofitems s, items i, partner p  where o.orderid = c.orderid and c.SourceOfItemsID = s.SourceOfItemsID and o.orderid = "'+req.params.order_id+'" and s.ItemID = i.ItemID and i.PartnerID = p.PartnerID)'
         let rs2 = await dbs.execute(sql2);
