@@ -49,13 +49,13 @@ router.post('/', [
         // Check Errors
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            
+
             res.status(200).json({ errors: errors.array() });
         } else {
             // let customer_id = await dbs.execute(`select customerid from customer where customerusername = ?`, [req.body.username]);
-            let sql = `insert into partner(partnerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, statusid, ship) values( ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            let sql = `insert into partner(partnerid, partnername, partneraddress, partneremail, partnerphone, partnerdescription, cityid, partnerTypeID, statusid, ship) values( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
             let partner_id = await dbs.getNextID('partner', 'partnerid');
-            let bind = [partner_id, req.body.name, req.body.address, req.body.email, req.body.phone, req.body.description, req.body.city, 0, req.body.ship];
+            let bind = [partner_id, req.body.name, req.body.address, req.body.email, req.body.phone, req.body.description, req.body.city, req.body.partnerType, 0, req.body.ship];
             let rs = await dbs.execute(sql, bind);
             res.json(rs)
         }
@@ -72,28 +72,40 @@ router.post('/signin', async function (req, res) {
     let password = req.body.password;
 
     try {
-        let user = await dbs.execute('select customer.*, partner.PartnerID, partner.PartnerName, partner.PartnerAddress, partner.PartnerEmail, partner.PartnerPassword, partner.PartnerPhone, partner.PartnerDescription, partner.PartnerImage, partner.PartnerTypeID, partner.ship, partner.statusid PartnerStatus, city.* from customer, partner, city where partner.PartnerEmail = ? and customer.CustomerID = partner.CustomerID and partner.cityID = city.cityID', [email]);
-        
+        let user = await dbs.execute('select customer.*, partner.PartnerID, partner.PartnerName, partner.PartnerAddress, partner.PartnerEmail, partner.PartnerPassword, partner.PartnerPhone, partner.PartnerDescription, partner.PartnerImage, partner.ship, partner.statusid PartnerStatus, city.*, partnertype.* from customer, partner, city, partnertype where partner.PartnerEmail = ? and customer.CustomerID = partner.CustomerID and partner.cityID = city.cityID and partnertype.partnertypeid = partner.partnertypeid', [email]);
+
         if (user[0]) {
-            let rs = bcrypt.compareSync(password, user[0].PartnerPassword);            
-            if(user[0].PartnerStatus !== 1){
+            let rs = bcrypt.compareSync(password, user[0].PartnerPassword);
+            if (user[0].PartnerStatus !== 1) {
                 res.json({ success: false, msg: 'Tài khoản của bạn đang bị khóa hoặc chưa kích hoạt !' });
-            } else if (rs) {                                
+            } else if (rs) {
                 delete user[0].CustomerPassword;
                 delete user[0].PartnerPassword;
                 let path = await dbs.execute('SELECT gp.path, gp.post, gp.get, gp.put, gp.del from group_permission gp, map_user_group mug, customer cu where gp.group_id=mug.group_id and mug.user_id= cu.CustomerID and cu.CustomerUsername =  ?', [user[0].CustomerUsername]);
                 var token = jwt.sign(JSON.parse(JSON.stringify(user[0])), config.secret, { expiresIn: config.expires });
                 res.json({ success: true, token: token, expires: new Date(Date.now() + config.expires * 1000), user: user[0], path: path });
-                
+
             } else {
+                console.log(1);
+                
                 res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
             }
         } else {
+            console.log(2);
+            
             res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
         }
-    } catch (error) {   
+    } catch (error) {
+        console.log(error);
+        
         res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
     }
+});
+
+//
+router.get('/partnertype', async (req, res) => {
+    let rs = await dbs.execute(`select partnertypeid, partnertypename from partnertype`, []);
+    res.json(rs);
 });
 
 privateRoutePartner(router);

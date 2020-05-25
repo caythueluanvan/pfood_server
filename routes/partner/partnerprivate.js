@@ -210,10 +210,10 @@ module.exports = (router) => {
         res.json({ order: rsOrder[0], orderDetail: rsOrderDetail });
     });
 
-    router.get('/promotionproductadd/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.ItemImage from items i  where i.statusid = 1 and i.itemid not in (select itemid from promotion where endtime > now()) and PartnerID = ?`, [req.params.partnerid]);
-        res.json(rs);
-    });
+    // router.get('/promotionproductadd/:partnerid', async (req, res) => {
+    //     let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.ItemImage from items i  where i.statusid = 1 and i.itemid not in (select itemid from promotion where endtime > now()) and PartnerID = ?`, [req.params.partnerid]);
+    //     res.json(rs);
+    // });
 
     router.get('/promotiontype', async (req, res) => {
         let rs = await dbs.execute(`select promotiontypeid, promotiontypename from promotiontype`, []);
@@ -227,20 +227,17 @@ module.exports = (router) => {
 
     router.post('/promotion', async (req, res) => {
         let item = req.body.item;
-        let bind = [];
-        item.forEach(e => {
-            bind.push([e, req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime])
-        });
-        let rs = await dbs.execute(`insert into promotion(itemid, promotiontypeid, promotionconditionid, starttime, endtime) values ?`, [bind]);
+        let bind = [req.body.partnerId, req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime];
+        let rs = await dbs.execute(`insert into promotion(partnerId, promotiontypeid, promotionconditionid, starttime, endtime) values(?,?,?,?,?)`, bind);
         if (rs.affectedRows > 0) {
-            res.json({ type: 'success', msg: 'Cập nhật trạng thái thành công !' });
+            res.json({ type: 'success', msg: 'Thêm khuyến mại thành công !' });
         } else {
-            res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
+            res.json({ type: 'fail', msg: 'Thêm khuyến mại không thành công !' });
         }
     });
 
     router.get('/promotion/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select p.promotionid, i.ItemID, i.ItemName, i.ItemImage, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from items i, promotion p, promotioncondition pc, promotiontype pt where i.statusid = 1 and i.itemid = p.itemid and pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and i.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select p.promotionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
         res.json(rs);
     });
 };
