@@ -69,7 +69,7 @@ module.exports = (router) => {
     });
 
     router.get('/product/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage, i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and PartnerID = ? GROUP BY i.itemid`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.PartnerID = ? GROUP BY i.itemid`, [req.params.partnerid]);
         res.json(rs);
     });
 
