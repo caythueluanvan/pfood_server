@@ -46,18 +46,24 @@ module.exports = (router) => {
 
         try {
             let productId = await dbs.getNextID('items', 'itemid');
-
-            let bind = [productId, req.body.PartnerID, req.body.ItemName, req.body.category, req.body.description, req.body.img, 0]
-            let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, CategoryID, description, ItemImage, statusID) values(?,?,?,?,?,?,?)`, bind);
+            if (req.body.productId) {
+                 productId = req.body.productId;
+            }else {
+                await dbs.execute(`insert into items(ItemID, ItemName, CategoryID) values(?,?,?)`, [productId, req.body.ItemName, req.body.category]);
+            }
+            let itemPartnerId = await dbs.getNextID('itempartner', 'id');
+            let bind = [itemPartnerId, req.body.PartnerID, productId,  req.body.description, req.body.defaultprice, req.body.img, 0]
+            let rs = await dbs.execute(`insert into items(id, partnerid, itemid, description, defaultprice, itemimage, statusid) values(?,?,?,?,?,?,?)`, bind);
+            
             if (req.body.scheduleDay.length) {
                 let bind = [];
                 req.body.scheduleDay.forEach(e => {
-                    bind.push([productId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
+                    bind.push([itemPartnerId, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
                 });
                 await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
             }
             if (rs.affectedRows > 0) {
-                let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?  GROUP BY i.itemid`, [productId])
+                let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY i.itemid`, [itemPartnerId])
                 res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
             } else {
                 res.json({ type: 'fail', msg: 'Thêm không thành công !' });
@@ -74,7 +80,7 @@ module.exports = (router) => {
     });
 
     router.delete('/product/:itemid', async (req, res) => {
-        let rs = await dbs.execute(`delete from items where ItemID = ?`, [req.params.itemid]);
+        let rs = await dbs.execute(`delete from itempartner where id = ?`, [req.params.itemid]);
         if (rs.affectedRows > 0) {
             res.json({ type: 'success', msg: 'Xóa thành công !', productId: req.params.itemid });
         } else {
@@ -83,8 +89,8 @@ module.exports = (router) => {
     });
 
     router.put('/product', async (req, res) => {
-        let bind = [req.body.ItemName, req.body.description, req.body.ItemImage, req.body.categoryID, req.body.ItemID];
-        let rs = await dbs.execute(`update items set ItemName = ?, description = ?, ItemImage = ?, CategoryID = ? where ItemID = ?`, bind);
+        let bind = [req.body.description, req.body.ItemImage, req.body.ItemID];
+        let rs = await dbs.execute(`update itempartner set description = ?, ItemImage = ?, where ItemID = ?`, bind);
         console.log(req.body.scheduleDay!= []);
         
         if (req.body.scheduleDay != null && req.body.scheduleDay.length) {
@@ -98,7 +104,7 @@ module.exports = (router) => {
             await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
         }
         if (rs.affectedRows > 0) {
-            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  i.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, i.ItemImage,i.StatusID, s.StatusName from items i left join scheduleitem si on i.ItemID = si.item_id, status s, category c where i.statusid=s.statusid and i.categoryID = c.categoryID  and i.itemid = ?`, [req.body.ItemID]);
+            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY i.itemid`, [req.body.ItemID]);
             res.json({ type: 'success', msg: 'Sửa thành công !', product: rsEdit });
         } else {
             res.json({ type: 'fail', msg: 'Sửa không thành công !' });
@@ -126,35 +132,35 @@ module.exports = (router) => {
         res.json(rs);
     });
 
-    router.post('/import', upload.single('file'), async (req, res) => {
-        let file = req.file;
-        wb = XLSX.read(file.buffer, { type: 'buffer' })
-        sheetName = wb.SheetNames[0]
-        ws = wb.Sheets[sheetName]
-        ref = XLSX.utils.decode_range(ws['!ref'])
-        range = XLSX.utils.encode_range(ref)
-        let header = ['item', 'description']
-        arr = XLSX.utils.sheet_to_json(ws, { header: header, defval: null, blankrows: false, range: range })
-        arr.shift();
-        let productid = await dbs.getNextID('items', 'itemid');
-        let bind = [];
-        let err = null;
-        arr.forEach((e, i) => {
-            let id = 'items' + ((parseInt(productid.replace('items', '')) + i).toString().padStart(20 - 'items'.length, '0'));
-            if (e.item === null) {
-                err = 'Tên sản phẩm không được để trống!';
-            }
-            bind.push([id, req.body.PartnerID, e.item, e.description, 0])
-        });
+    // router.post('/import', upload.single('file'), async (req, res) => {
+    //     let file = req.file;
+    //     wb = XLSX.read(file.buffer, { type: 'buffer' })
+    //     sheetName = wb.SheetNames[0]
+    //     ws = wb.Sheets[sheetName]
+    //     ref = XLSX.utils.decode_range(ws['!ref'])
+    //     range = XLSX.utils.encode_range(ref)
+    //     let header = ['item', 'description']
+    //     arr = XLSX.utils.sheet_to_json(ws, { header: header, defval: null, blankrows: false, range: range })
+    //     arr.shift();
+    //     let productid = await dbs.getNextID('items', 'itemid');
+    //     let bind = [];
+    //     let err = null;
+    //     arr.forEach((e, i) => {
+    //         let id = 'items' + ((parseInt(productid.replace('items', '')) + i).toString().padStart(20 - 'items'.length, '0'));
+    //         if (e.item === null) {
+    //             err = 'Tên sản phẩm không được để trống!';
+    //         }
+    //         bind.push([id, req.body.PartnerID, e.item, e.description, 0])
+    //     });
 
-        if (err) {
-            res.json({ msg: err });
-        } else {
-            let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, description, StatusID) values ?`, [bind]);
-            res.json(rs);
-        }
+    //     if (err) {
+    //         res.json({ msg: err });
+    //     } else {
+    //         let rs = await dbs.execute(`insert into items(ItemID, PartnerID, ItemName, description, StatusID) values ?`, [bind]);
+    //         res.json(rs);
+    //     }
 
-    });
+    // });
 
     router.get('/homepage', async (req, res) => {
         let rsItemsActive = await dbs.execute(`SELECT count(*) as count FROM itempartner WHERE STATUSid = 1 and PartnerID = ?`, [req.headers.partnerid]);
