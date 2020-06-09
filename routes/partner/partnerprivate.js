@@ -21,6 +21,8 @@ module.exports = (router) => {
     // });
 
     router.put('/', async (req, res) => {
+        console.log(req.body);
+        
         let PartnerID = req.body.PartnerID;
         let body = req.body;
         delete body.PartnerID;
@@ -46,14 +48,14 @@ module.exports = (router) => {
 
         try {
             let productId = await dbs.getNextID('items', 'itemid');
-            if (req.body.productId) {
+            if (req.body.productId!=='' && req.body.productId!== null && req.body.productId) {
                  productId = req.body.productId;
             }else {
                 await dbs.execute(`insert into items(ItemID, ItemName, CategoryID) values(?,?,?)`, [productId, req.body.ItemName, req.body.category]);
             }
             let itemPartnerId = await dbs.getNextID('itempartner', 'id');
             let bind = [itemPartnerId, req.body.PartnerID, productId,  req.body.description, req.body.defaultprice, req.body.img, 0]
-            let rs = await dbs.execute(`insert into items(id, partnerid, itemid, description, defaultprice, itemimage, statusid) values(?,?,?,?,?,?,?)`, bind);
+            let rs = await dbs.execute(`insert into itempartner(id, partnerid, itemid, description, defaultprice, itemimage, statusid) values(?,?,?,?,?,?,?)`, bind);
             
             if (req.body.scheduleDay.length) {
                 let bind = [];
@@ -63,19 +65,20 @@ module.exports = (router) => {
                 await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
             }
             if (rs.affectedRows > 0) {
-                let rsAdd = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY i.itemid`, [itemPartnerId])
+                let rsAdd = await dbs.execute(`select ip.id, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, ip.defaultprice, ip.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where ip.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY ip.id`, [itemPartnerId])
                 res.json({ type: 'success', msg: 'Thêm thành công !', product: rsAdd });
             } else {
                 res.json({ type: 'fail', msg: 'Thêm không thành công !' });
             }
         } catch (error) {
+            console.log(error);
             res.json({ type: 'fail', msg: error });
         }
 
     });
 
     router.get('/product/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.PartnerID = ? GROUP BY i.itemid`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select ip.id, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, ip.defaultprice, ip.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where ip.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.PartnerID = ? GROUP BY ip.id`, [req.params.partnerid]);
         res.json(rs);
     });
 
@@ -89,22 +92,18 @@ module.exports = (router) => {
     });
 
     router.put('/product', async (req, res) => {
-        let bind = [req.body.description, req.body.ItemImage, req.body.ItemID];
-        let rs = await dbs.execute(`update itempartner set description = ?, ItemImage = ?, where ItemID = ?`, bind);
-        console.log(req.body.scheduleDay!= []);
-        
+        let bind = [req.body.description, req.body.ItemImage, req.body.id];
+        let rs = await dbs.execute(`update itempartner set description = ?, ItemImage = ? where id = ?`, bind);
+        await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.id]);
         if (req.body.scheduleDay != null && req.body.scheduleDay.length) {
             let bind = [];
             req.body.scheduleDay.forEach(e => {
                 bind.push([req.body.ItemID, e, req.body.scheduleTimeFrom, req.body.scheduleTimeTo, req.body.schedulePrice, req.body.scheduleAmount])
             });
-            await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
             await dbs.execute(`insert into scheduleitem(Item_ID, dayofweek, timefrom, timeto, price, amount) values ?`, [bind]);
-        } else {
-            await dbs.execute(`delete from scheduleitem where Item_ID = ?`, [req.body.ItemID]);
         }
         if (rs.affectedRows > 0) {
-            let rsEdit = await dbs.execute(`select i.ItemID, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, i.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where i.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY i.itemid`, [req.body.ItemID]);
+            let rsEdit = await dbs.execute(`select ip.id, i.ItemName, i.categoryID, c.categoryName,  ip.description, GROUP_CONCAT(si.dayofweek) scheduleDay, si.price schedulePrice, si.amount scheduleAmount, si.timefrom scheduleTimeFrom, si.timeto scheduleTimeTo, ip.ItemImage, ip.defaultprice, ip.StatusID, s.StatusName from itempartner ip left join scheduleitem si on ip.id = si.item_id, status s, category c, items i where ip.statusid=s.statusid and i.categoryID = c.categoryID and i.ItemID = ip.itemid and ip.id = ? GROUP BY ip.id`, [req.body.id]);
             res.json({ type: 'success', msg: 'Sửa thành công !', product: rsEdit });
         } else {
             res.json({ type: 'fail', msg: 'Sửa không thành công !' });
