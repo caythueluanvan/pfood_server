@@ -44,6 +44,99 @@ module.exports = (router) => {
         res.json(rs);
     });
 
+    /* Change Pass */
+    router.post('/changepass', [
+        check('oldPass', 'Tên không được để trống !').notEmpty(),
+        check('newPass', 'Tên không được để trống !').notEmpty(),
+        check('rePass', 'Tên không được để trống !').notEmpty(),
+        check('newPass', 'Độ dài mật khẩu mới tối thiểu 5 ký tự !').isLength({ min: 5 }),
+        body().custom(async value => {            
+            let user = await dbs.execute('select * from partner where partnerid = ?', [value.id])
+            let rs = bcrypt.compareSync(value.oldPass, user[0].PartnerPassword);
+            if(!rs){
+                return Promise.reject('Mật khẩu cũ không chính xác !');
+            } 
+        }),
+        body().custom(async value => {
+            if (value.newPass!==value.rePass) {
+                return Promise.reject('Mật khẩu nhắc lại không khớp !');
+            }
+        }),
+    ], async (req, res) => {
+
+        try {
+            // Check Errors
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                let msg = errors.array().map((e, i) => {
+                    return e.msg + '\n'
+                })
+                res.json({ type: 'error', msg: msg });
+            } else {
+                const saltRounds = 10;
+                let salt = bcrypt.genSaltSync(saltRounds);
+                let pass = bcrypt.hashSync(req.body.newPass, salt);
+                let sql = `update partner set PartnerPassword =? where partnerid=?`;
+                let bind = [pass, req.body.id];
+                let rs = await dbs.execute(sql, bind);                
+                if (rs.affectedRows > 0) {
+                    res.json({ type: 'success', msg: 'Sửa thành công !'});
+                } else {
+                    res.json({ type: 'fail', msg: 'Sửa không thành công !' });
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            res.json({ err: error });
+        }
+    });
+
+    /* forget Pass */
+    router.get('/forgetpass/:partnerid', async (req, res) => {
+        
+            let id = Math.floor(Math.random() * (999999 - 100000))
+            const saltRounds = 10;
+            let salt = bcrypt.genSaltSync(saltRounds);
+            let pass = bcrypt.hashSync(id.toString(), salt);
+            let rs1 = await dbs.execute('update partner  set  PartnerPassword = "' + pass + '" where PartnerID =  "' + req.body.PartnerID + '"')
+
+            let transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: {
+                    user: 'tdhoang96',
+                    pass: 'giongnhuid0'
+                }
+            });
+            let sql5 = 'select PartnerEmail, partnername, partneraddress, partnerphone from partner where PartnerID =  "' + req.body.PartnerID + '"'
+            let rs5 = await dbs.execute(sql5)
+
+
+
+            let content = "<b>Chúc mừng bạn đã đăng ký thành công trở thành đối tác của ứng dụng Pfood !</b><br>"
+            content += "<p>username :" + rs5[0].PartnerEmail + "</p>"
+            content += "<p>Password : " + id + "</p>"
+            // send mail with defined transport objec
+            transporter.sendMail({
+                from: '"tdhoang96" <tdhoang96@gmail.com>', // sender address
+                to: rs5[0].PartnerEmail, // list of receivers
+                subject: "Thông báo thông tin đăng ký đối tác của PFOOD", // Subject line
+                text: "", // plain text body
+                html: content // html body
+            }, (error, info) => {
+                if (error) {
+                    res.json({ status: false, message: error })
+                }
+            });
+            let customerid = await dbs.getNextID('customer', 'customerid');
+            await dbs.execute('update partner  set customerid = ? where PartnerID =  ?', [customerid, req.body.PartnerID]);
+            let bind = [customerid, rs5[0].partnername, rs5[0].PartnerEmail, pass, rs5[0].partneraddress, rs5[0].partnerphone, rs5[0].PartnerEmail, 1];
+            await dbs.execute(`insert into customer(CustomerID, CustomerName, CustomerUsername, CustomerPassword, 
+                CustomerAddress, CustomerPhone, CustomerEmail, StatusID) values(?, ?, ?, ?, ?, ?, ?, ?)`, bind);
+        
+         await dbs.execute('update partner  set  StatusID = ? where PartnerID =  ?', [req.body.StatusID, req.body.PartnerID]);
+        res.json({ status: true, message: "thanh cong" })
+    });
+
     router.post('/product', async (req, res) => {
 
         try {

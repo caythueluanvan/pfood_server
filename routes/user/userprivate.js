@@ -42,7 +42,6 @@ module.exports = (router) => {
         // console.log(sql)
         let rs = await dbs.execute(sql)
         res.json(rs);
-        
     });
 
     router.get('/historyDetail/:order_id', async (req, res) => {
