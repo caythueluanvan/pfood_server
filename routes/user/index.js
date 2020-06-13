@@ -4,6 +4,7 @@ const dbs = require('../../utils/dbs');
 const { check, validationResult, body } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const privateRouteUser = require('./userprivate');
+
 /* Add User */
 router.post('/', [
     check('name', 'Name field is required').notEmpty(),
@@ -62,9 +63,19 @@ router.post('/', [
 
 });
 
-/* Edit User */
-router.put('/', (req, res) => {
-
+/* Check phone */
+router.get('/checkphonenumber/:phone', async (req, res) => {
+    try {
+       let rs = await dbs.execute(`select * from customer where customerphone = ?`,[req.params.phone])
+        if (rs.length) {
+            res.json({ status: '1', msg: 'Số điện thoại đã tồn tại !' });
+        } else {
+            res.json({ status: '0', msg: 'Số điện thoại chưa tồn tại !' });
+        }
+    } catch (error) {
+        console.log(error);
+        res.json({ status: '2', msg: error });
+    }
 });
 
 privateRouteUser(router);

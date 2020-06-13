@@ -1,5 +1,7 @@
 const dbs = require('../../utils/dbs');
 const auth = require('../../utils/auth');
+const { check, validationResult, body } = require('express-validator');
+const bcrypt = require('bcryptjs');
 var uniqid = require('uniqid');
 /* Authentication */
 
@@ -42,6 +44,52 @@ module.exports = (router) => {
         // console.log(sql)
         let rs = await dbs.execute(sql)
         res.json(rs);
+    });
+
+    /* Change Pass */
+    router.post('/changepass', [
+        check('oldPass', 'Tên không được để trống !').notEmpty(),
+        check('newPass', 'Tên không được để trống !').notEmpty(),
+        check('rePass', 'Tên không được để trống !').notEmpty(),
+        check('newPass', 'Độ dài mật khẩu mới tối thiểu 5 ký tự !').isLength({ min: 5 }),
+        body().custom(async value => {
+            let user = await dbs.execute('select * from customer where customerid = ?', [value.id])            
+            let rs = bcrypt.compareSync(value.oldPass, user[0].CustomerPassword);
+            if (!rs) {
+                return Promise.reject('Mật khẩu cũ không chính xác !');
+            }
+        }),
+        body().custom(async value => {
+            if (value.newPass !== value.rePass) {
+                return Promise.reject('Mật khẩu nhắc lại không khớp !');
+            }
+        }),
+    ], async (req, res) => {
+        try {
+            // Check Errors
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                let msg = errors.array().map((e, i) => {
+                    return e.msg + ''
+                })
+                res.json({ type: 'fail', msg: msg });
+            } else {
+                const saltRounds = 10;
+                let salt = bcrypt.genSaltSync(saltRounds);
+                let pass = bcrypt.hashSync(req.body.newPass, salt);
+                let sql = `update customer set CustomerPassword =? where customerid=?`;
+                let bind = [pass, req.body.id];
+                let rs = await dbs.execute(sql, bind);
+                if (rs.affectedRows > 0) {
+                    res.json({ type: 'success', msg: 'Sửa thành công !' });
+                } else {
+                    res.json({ type: 'fail', msg: 'Sửa không thành công !' });
+                }
+            }
+        } catch (error) {
+            console.log(error);
+            res.json({ type: 'fail', msg: error });
+        }
     });
 
     router.get('/historyDetail/:order_id', async (req, res) => {
