@@ -133,7 +133,7 @@ module.exports = (router) => {
         // console.log('getProduct')
         var like = req.body.like
         var orderBys = req.body.orderBy
-        let sql = 'select i.*, p.PartnerName, (select s.Price from sourceofitems s where s.ItemID = i.ItemID order by s.EndTime DESC limit 1)  Price from items i, partner p where 1 = 1 and p.PartnerID = i.PartnerID'
+        let sql = 'select i.*,m.StatusID, p.PartnerName, m.defaultprice  Price, m.description, m.id from items i, partner p, itempartner m where 1 = 1 and p.PartnerID = m.PartnerID and m.itemid = i.itemid'
         like.map(like => {
             if (like.value != "" && like.value != undefined && like.value != null) {
                 sql = sql + ' and ' + like.column + ' like "%' + like.value + '%" '
@@ -148,7 +148,7 @@ module.exports = (router) => {
             }
         })
         sql = sql + ' limit ' + req.body.limit + ' offset ' + req.body.offset
-        // console.log(sql);
+        console.log(sql);
         let rs = await dbs.execute(sql);
 
         res.json(rs);
@@ -158,7 +158,7 @@ module.exports = (router) => {
 
     // Enable hoặc disable product
     router.post('/ProductController', async (req, res) => {
-        let rs = await dbs.execute('update items  set  StatusID = "' + req.body.StatusID + '" where ItemID =  "' + req.body.ItemID + '"');
+        let rs = await dbs.execute('update itempartner  set  StatusID = "' + req.body.StatusID + '" where ID =  "' + req.body.ItemID + '"');
         res.json(rs);
     });
 

@@ -118,6 +118,8 @@ module.exports = (router) => {
         // console.log(sql)
         let rs= await dbs.execute(sql);
         if(rs.changedRows > 0){
+            let sql100 ='slect * from parameters where ParamID = 4'
+            let rs100 = await dbs.execute(sql100);
             let sql6 = 'select * from orderdetail where OrderID = "' + req.params.order_id + '"'
             let rs6 = await dbs.execute(sql6);
             // console.log(rs6)
@@ -127,8 +129,9 @@ module.exports = (router) => {
             })
             let sql3 = 'select CountReject from customer where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
             let rs3= await dbs.execute(sql3);
-            if(rs3[0].CountReject == 5){
+            if(rs3[0].CountReject == rs100[0].ParamValue){
                 let sql2 = 'update customer set LockStartTime  = now() where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
+                dbs.execute(sql2);
                 res.json({status:logout, message: "huy thanh cong"})
             }else{
                 res.json({status:true, message: "huy thanh cong"})
