@@ -9,7 +9,7 @@ const privateRoutePartner = require('./partnerprivate');
 /* Add User */
 router.post('/', [
     // check('username', 'Tên đăng nhập không được để trống !').notEmpty(),
-    check('phone', 'Dộ dài số điện thoại không hợp lệ !').isLength({ min: 10 }),
+    check('phone', 'Độ dài số điện thoại không hợp lệ !').isLength({ min: 10 }),
     body('email').custom(async value => {
         let user = await dbs.execute('select * from customer where customeremail = ?', [value])
         let partner = await dbs.execute('select * from partner where partneremail = ?', [value])

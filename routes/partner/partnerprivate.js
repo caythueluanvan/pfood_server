@@ -97,6 +97,12 @@ module.exports = (router) => {
     /* forget Pass */
     router.get('/forgetpass/:email', [
         check('email', 'Email không hợp lệ !').isEmail(),
+        check('email').custom(async value => {
+            let partner = await dbs.execute('select * from partner where partneremail = ?', [value])
+            if (!partner[0]) {
+                return Promise.reject('Địa chỉ email không tồn tại !');
+            }
+        }),
     ], async (req, res) => {
         try {
             const errors = validationResult(req);
@@ -131,7 +137,7 @@ module.exports = (router) => {
                     html: content // html body
                 }, (error, info) => {
                     if (error) {
-                        res.json({ type: 'fail', msg: error  })
+                        res.json({ type: 'fail', msg: error })
                     }
                 });
                 res.json({ type: 'success', msg: "Mật khẩu mới đã được gửi tới email của bạn !" })
@@ -213,8 +219,8 @@ module.exports = (router) => {
     //
 
     router.post('/sourceofitems', async (req, res) => {
-        let bind = [await dbs.getNextID('sourceofitems', 'SourceOfItemsID'), req.body.ItemID, req.body.Summary, req.body.Price, new Date(req.body.StartTime), new Date(req.body.EndTime), req.body.Description, req.body.Image]
-        let rs = await dbs.execute(`insert into sourceofitems(SourceOfItemsID, ItemID, Summary, Price, StartTime, EndTime, Description, Image) values(?,?,?,?,?,?,?, ?)`, bind);
+        let bind = [await dbs.getNextID('sourceofitems', 'SourceOfItemsID'), req.body.ItemID, req.body.Summary, req.body.Price, new Date(req.body.StartTime), new Date(req.body.EndTime)]
+        let rs = await dbs.execute(`insert into sourceofitems(SourceOfItemsID, ItemID, Summary, Price, StartTime, EndTime) values(?,?,?,?,?,?)`, bind);
         if (rs.affectedRows > 0) {
             res.json({ type: 'success', msg: 'Đăng bán thành công !' });
         } else {
@@ -223,7 +229,7 @@ module.exports = (router) => {
     });
 
     router.get('/sourceofitems/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`SELECT s.*, it.ItemName, i.ItemImage FROM sourceofitems s, itempartner i, items it WHERE i.itemid = it.ItemID and s.ItemID = i.ItemID and i.partnerid = ? and s.EndTime >= now()`, [req.params.partnerid]);
+        let rs = await dbs.execute(`SELECT s.*, it.ItemName, i.ItemImage FROM sourceofitems s, itempartner i, items it WHERE i.itemid = it.ItemID and s.ItemID = i.id and i.partnerid = ? and s.EndTime >= now() order by s.SourceOfItemsID desc`, [req.params.partnerid]);
         res.json(rs);
     });
 
@@ -339,12 +345,20 @@ module.exports = (router) => {
     router.post('/promotion', async (req, res) => {
         let item = req.body.item;
         let bind = [req.body.partnerId, req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime];
-        let rs = await dbs.execute(`insert into promotion(partnerId, promotiontypeid, promotionconditionid, starttime, endtime) values(?,?,?,?,?)`, bind);
-        if (rs.affectedRows > 0) {
-            res.json({ type: 'success', msg: 'Thêm khuyến mại thành công !' });
+        let checkexits = await dbs.execute(`select * from promotion where partnerid = ? and endtime > ?`, [req.body.partnerId, req.body.StartTime]);
+        console.log(checkexits.length);
+        
+        if (checkexits.length > 0) {
+            res.json({ type: 'fail', msg: 'Đang có chương trình khuyến mãi khác trùng với khoảng thời gian diễn gia !' });
         } else {
-            res.json({ type: 'fail', msg: 'Thêm khuyến mại không thành công !' });
+            let rs = await dbs.execute(`insert into promotion(partnerId, promotiontypeid, promotionconditionid, starttime, endtime) values(?,?,?,?,?)`, bind);
+            if (rs.affectedRows > 0) {
+                res.json({ type: 'success', msg: 'Thêm khuyến mại thành công !' });
+            } else {
+                res.json({ type: 'fail', msg: 'Thêm khuyến mại không thành công !' });
+            }
         }
+
     });
 
     router.get('/promotion/:partnerid', async (req, res) => {
