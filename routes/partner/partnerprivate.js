@@ -229,7 +229,17 @@ module.exports = (router) => {
     });
 
     router.get('/sourceofitems/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`SELECT s.*, it.ItemName, i.ItemImage FROM sourceofitems s, itempartner i, items it WHERE i.itemid = it.ItemID and s.ItemID = i.id and i.partnerid = ? and s.EndTime >= now() order by s.SourceOfItemsID desc`, [req.params.partnerid]);
+        let condition = '';
+        // if(req.headers.name){
+        //     condition+= ` and it.itemname like '%${req.headers.name}%' `
+        // }
+        if(req.headers.starttime){
+            condition+= ` and s.starttime >= '${req.headers.starttime}' `
+        }
+        if(req.headers.endtime){
+            condition+= ` and s.endtime <= '${req.headers.endtime}' `
+        }        
+        let rs = await dbs.execute(`SELECT s.*, it.ItemName, i.ItemImage, case when s.starttime < now() and now() < s.endtime then 'Đang diễn ra' when s.endtime < now() then 'Đã kết thúc' when s.starttime > now() then 'Chưa diễn ra' end as status FROM sourceofitems s, itempartner i, items it WHERE i.itemid = it.ItemID and s.ItemID = i.id and i.partnerid = ? and s.EndTime >= now() ${condition} order by s.SourceOfItemsID desc`, [req.params.partnerid]);
         res.json(rs);
     });
 
