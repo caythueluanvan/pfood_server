@@ -238,9 +238,7 @@ module.exports = (router) => {
         }
         if(req.headers.endtime){
             condition+= ` and s.endtime <= '${req.headers.endtime}' `
-        }
-        console.log(condition);
-        
+        }        
         let rs = await dbs.execute(`SELECT s.*, it.ItemName, i.ItemImage, case when s.starttime < now() and now() < s.endtime then 'Đang diễn ra' when s.endtime < now() then 'Đã kết thúc' when s.starttime > now() then 'Chưa diễn ra' end as status FROM sourceofitems s, itempartner i, items it WHERE i.itemid = it.ItemID and s.ItemID = i.id and i.partnerid = ? and s.EndTime >= now() ${condition} order by s.SourceOfItemsID desc`, [req.params.partnerid]);
         res.json(rs);
     });
