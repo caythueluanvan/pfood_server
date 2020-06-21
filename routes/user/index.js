@@ -7,19 +7,19 @@ const privateRouteUser = require('./userprivate');
 
 /* Add User */
 router.post('/', [
-    check('name', 'Name field is required').notEmpty(),
+    // check('name', 'Name field is required').notEmpty(),
     check('mail', 'Email field is required').notEmpty(),
     check('mail', 'Email is not valid').isEmail(),
     check('username', 'Username field is required').notEmpty(),
     check('pass', 'Password field is required').notEmpty(),
     check('pass', 'Password field is min 5 character').isLength({ min: 5 }),
     check('phone', 'Password field is min 10 character').isLength({ min: 10 }),
-    body('mail').custom(async value => {
-        let user = await dbs.execute('select * from customer where CustomerEmail = ?', [value])
-        if (user[0]) {
-            return Promise.reject('E-mail đã tồn tại');
-        }
-    }),
+    // body('mail').custom(async value => {
+    //     let user = await dbs.execute('select * from customer where CustomerEmail = ?', [value])
+    //     if (user[0]) {
+    //         return Promise.reject('E-mail đã tồn tại');
+    //     }
+    // }),
     body('phone').custom(async value => {
         let user = await dbs.execute('select * from customer where CustomerPhone = ?', [value])
         if (user[0]) {
