@@ -372,7 +372,7 @@ module.exports = (router) => {
     });
 
     router.get('/promotion/:partnerid', async (req, res) => {
-        let rs = await dbs.execute(`select p.promotionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
+        let rs = await dbs.execute(`select p.promotionid, p.promotiontypeid, p.promotionconditionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
         res.json(rs);
     });
 };
