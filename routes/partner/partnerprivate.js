@@ -353,17 +353,15 @@ module.exports = (router) => {
     });
 
     router.post('/promotion', async (req, res) => {
-        let item = req.body.item;
         let bind = [req.body.partnerId, req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime];
-        let checkexits = await dbs.execute(`select * from promotion where partnerid = ? and endtime > ?`, [req.body.partnerId, req.body.StartTime]);
-        console.log(checkexits.length);
-        
+        let checkexits = await dbs.execute(`select * from promotion where partnerid = ? and endtime > ?`, [req.body.partnerId, req.body.StartTime]);        
         if (checkexits.length > 0) {
             res.json({ type: 'fail', msg: 'Đang có chương trình khuyến mãi khác trùng với khoảng thời gian diễn gia !' });
         } else {
-            let rs = await dbs.execute(`insert into promotion(partnerId, promotiontypeid, promotionconditionid, starttime, endtime) values(?,?,?,?,?)`, bind);
+            let rs = await dbs.execute(`insert into promotion(partnerId, promotiontypeid, promotionconditionid, starttime, endtime) values(?,?,?,?,?)`, bind);            
             if (rs.affectedRows > 0) {
-                res.json({ type: 'success', msg: 'Thêm khuyến mại thành công !' });
+                let rsAdd = await await dbs.execute(`select p.promotionid, p.promotiontypeid, p.promotionconditionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.promotionid = ? order by p.promotionid desc`, [rs.insertId]);
+                res.json({ type: 'success', msg: 'Thêm khuyến mại thành công !', promotion: rsAdd });
             } else {
                 res.json({ type: 'fail', msg: 'Thêm khuyến mại không thành công !' });
             }
@@ -374,5 +372,18 @@ module.exports = (router) => {
     router.get('/promotion/:partnerid', async (req, res) => {
         let rs = await dbs.execute(`select p.promotionid, p.promotiontypeid, p.promotionconditionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.PartnerID = ? order by p.promotionid desc`, [req.params.partnerid]);
         res.json(rs);
+    });
+
+    router.put('/promotion', async (req, res) => {
+        let bind = [req.body.type, req.body.condition, req.body.StartTime, req.body.EndTime, req.body.promotionid];        
+            let rs = await dbs.execute(`update promotion set promotiontypeid = ?, promotionconditionid = ?, starttime = ?, endtime = ? where promotionid = ?`, bind);
+            if (rs.affectedRows > 0) {
+                let rsPut = await await dbs.execute(`select p.promotionid, p.promotiontypeid, p.promotionconditionid, p.partnerID, pt.promotiontypename, pc.conditionname, p.starttime, p.endtime, case when p.starttime < now() and now() < p.endtime then 'Đang diễn ra' when p.endtime < now() then 'Đã kết thúc' when p.starttime > now() then 'Chưa diễn ra' end as status from promotion p, promotioncondition pc, promotiontype pt where pc.conditionid = p.promotionconditionid and pt.promotiontypeid = p.promotiontypeid and p.promotionid = ? order by p.promotionid desc`, [req.body.promotionid]);
+                res.json({ type: 'success', msg: 'Sửa khuyến mại thành công !', promotion: rsPut });
+            } else {
+                res.json({ type: 'fail', msg: 'Sửa khuyến mại không thành công !' });
+            }
+        
+
     });
 };
