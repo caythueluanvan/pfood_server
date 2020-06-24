@@ -248,6 +248,16 @@ module.exports = (router) => {
         res.json(rs);
     });
 
+    router.post('/checkproductexist', async (req, res) => {
+        let rs = await dbs.execute(`SELECT * FROM items where lower(itemname) = lower(?)`, [req.body.name]);
+        if (rs.length) {
+            res.json(true);
+        }else {
+            res.json(false);
+        }
+        
+    });
+
     // router.post('/import', upload.single('file'), async (req, res) => {
     //     let file = req.file;
     //     wb = XLSX.read(file.buffer, { type: 'buffer' })
