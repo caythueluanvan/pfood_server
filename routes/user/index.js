@@ -8,8 +8,8 @@ const privateRouteUser = require('./userprivate');
 /* Add User */
 router.post('/', [
     // check('name', 'Name field is required').notEmpty(),
-    check('mail', 'Email field is required').notEmpty(),
-    check('mail', 'Email is not valid').isEmail(),
+    // check('mail', 'Email field is required').notEmpty(),
+    // check('mail', 'Email is not valid').isEmail(),
     check('username', 'Username field is required').notEmpty(),
     check('pass', 'Password field is required').notEmpty(),
     check('pass', 'Password field is min 5 character').isLength({ min: 5 }),
