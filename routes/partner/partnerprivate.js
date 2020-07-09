@@ -313,7 +313,7 @@ module.exports = (router) => {
     });
 
     router.get('/order/:partnerid', async (req, res) => {
-        let rs = await dbs.execute('SELECT distinct o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE i.partnerid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.params.partnerid]);
+        let rs = await dbs.execute('SELECT distinct o.orderid, o.customerid, c.CustomerUsername CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE i.partnerid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.params.partnerid]);
         res.json(rs);
     });
 
@@ -335,14 +335,14 @@ module.exports = (router) => {
 
         let rs = await dbs.execute('update `order` set statusid = ?, ?? = now() where orderid = ? ', [req.body.status, dateUpdate, req.body.orderid]);
         if (rs.affectedRows > 0) {
-            let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.body.orderid]);
+            let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerUsername CustomerName, o.ordernote, o.ship, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.body.orderid]);            
             res.json({ type: 'success', msg: 'Cập nhật trạng thái thành công !', order: rsOrder });
         } else {
             res.json({ type: 'fail', msg: 'Cập nhật trạng thái không thành công !' });
         }
     });
     router.get('/detailorderbyid', async (req, res) => {
-        let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerName,c.CustomerPhone, o.ordernote, o.ship,o.shipaddress, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
+        let rsOrder = await dbs.execute('SELECT o.orderid, o.customerid, c.CustomerUsername CustomerName,c.CustomerPhone, o.ordernote, o.ship,o.shipaddress, o.adddate, o.rejectdate, o.approvedate, o.statusid, s.StatusName FROM itempartner i, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
         let rsOrderDetail = await dbs.execute('SELECT o.orderid,it.ItemName, si.SourceOfItemsID,i.ItemImage Image, od.total, od.price, od.Description FROM itempartner i, items it, SourceOfItems si, orderdetail od, `order` o, status s, customer c WHERE o.orderid = ? and i.itemid = it.ItemID and i.id = si.itemid and si.SourceOfItemsID = od.SourceOfItemsID and o.orderid = od.OrderID and o.statusid = s.StatusID and c.CustomerID  = o.CustomerID order by o.adddate desc', [req.headers.orderid]);
         res.json({ order: rsOrder[0], orderDetail: rsOrderDetail });
     });
