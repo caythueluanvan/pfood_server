@@ -121,8 +121,8 @@ module.exports = (router) => {
                 let transporter = nodemailer.createTransport({
                     service: 'gmail',
                     auth: {
-                        user: 'tdhoang96',
-                        pass: 'giongnhuid0'
+                        user: 'pfoodapp',
+                        pass: 'Pfood1102'
                     }
                 });
 
@@ -130,7 +130,7 @@ module.exports = (router) => {
                 content += "<p>Password : " + id + "</p>"
                 // send mail with defined transport objec
                 transporter.sendMail({
-                    from: '"tdhoang96" <tdhoang96@gmail.com>', // sender address
+                    from: '"pfoodapp" <pfoodapp@gmail.com>', // sender address
                     to: req.params.email, // list of receivers
                     subject: "Thông báo cấp lại mật khẩu đối tác của PFOOD", // Subject line
                     text: "", // plain text body
