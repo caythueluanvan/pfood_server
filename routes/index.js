@@ -80,7 +80,10 @@ router.post('/signin', async function (req, res) {
           let a = Math.ceil((toReject - new Date()) / (24 * 60 * 60 * 1000));
           res.json({ success: false, msg: 'Tài khoản của bạn bị khóa trong ' + a + ' ngày !' });
         }
-      } else {
+      } else if(user[0].StatusID!==1){
+        res.json({ success: false, msg: 'Tài khoản của bạn bị khóa vĩnh viễn !' });
+      }
+       else {
         let rs = bcrypt.compareSync(password, user[0].CustomerPassword);
 
         if (rs) {
