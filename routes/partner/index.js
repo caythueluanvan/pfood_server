@@ -90,7 +90,9 @@ router.post('/signin', async function (req, res) {
                 
                 res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
             }
-        } else {
+        } else if(user[0].StatusID!==1){
+            res.json({ success: false, msg: 'Tài khoản của bạn bị khóa vĩnh viễn !' });
+          } else {
             console.log(2);
             
             res.json({ success: false, msg: 'Sai Tên Đăng Nhập Hoặc Mật Khẩu !' });
