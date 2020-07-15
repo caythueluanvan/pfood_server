@@ -118,7 +118,7 @@ module.exports = (router) => {
         // console.log(sql)
         let rs= await dbs.execute(sql);
         if(rs.changedRows > 0){
-            let sql100 ='slect * from parameters where ParamID = 4'
+            let sql100 ='select * from parameters where ParamID = 4'
             let rs100 = await dbs.execute(sql100);
             let sql6 = 'select * from orderdetail where OrderID = "' + req.params.order_id + '"'
             let rs6 = await dbs.execute(sql6);
