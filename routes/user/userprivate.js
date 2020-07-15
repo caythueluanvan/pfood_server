@@ -314,7 +314,7 @@ module.exports = (router) => {
     router.post('/order', async (req, res) => {
         let id =""
         let rsCheck = 1
-        let sqlCheck = 'select count(OrderID) dem from order where upper(OrderID) = upper(id)'
+        let sqlCheck = 'select count(OrderID) dem from order where upper(OrderID) = upper("'+id+'")'
         do{
         //sinh 5 ký tự từ các số và ký tự từ a- z
         id = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
