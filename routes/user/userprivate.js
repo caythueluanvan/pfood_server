@@ -314,14 +314,13 @@ module.exports = (router) => {
     router.post('/order', async (req, res) => {
         let id =""
         let rsCheck = 1
-        let sqlCheck = 'select count(OrderID) dem from order where upper(OrderID) = upper("'+id+'")'
         do{
         //sinh 5 ký tự từ các số và ký tự từ a- z
         id = Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 5);
+		let sqlCheck = 'select count(OrderID) dem from `order` where upper(OrderID) = upper("'+id+'")'
         //kiểm tra dưới db xem đã tồn tại mã này chưa
         rsCheck = await dbs.execute(sqlCheck)
-        console.log(rs[0].dem)
-        }while(rsCheck[0].dem < 1)
+        }while(rsCheck[0].dem > 0)
         let result = {status: true,message:id };
         let sql = 'INSERT INTO `order`(OrderID, CustomerID, OrderNote, OrderPayment,ship, shipAddress, StatusID, PartnerID, promotionid) VALUES ("'+ id +'", "'+ req.body.CustomerID +'", "' + req.body.OrderNote + '", "' + req.body.OrderPayment + '", "' + req.body.ship + '", "' + req.body.shipAddress + '", 6, "'+ req.body.PartnerID +'", "'+ req.body.promotionid +'")'
         let rs = await dbs.execute(sql);
