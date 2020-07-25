@@ -158,7 +158,6 @@ module.exports = (router) => {
 
     // Enable hoặc disable product
     router.post('/ProductController', async (req, res) => {
-        console.log(req.body);
         let rs = await dbs.execute('update itempartner  set  StatusID = "' + req.body.StatusID + '" where ID =  "' + req.body.ItemID + '"');
         res.json(rs);
     });
