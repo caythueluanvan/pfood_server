@@ -3,8 +3,8 @@ const router = express.Router();
 const dbs = require('../../utils/dbs');
 
 router.get('/recommend/:customerid', async function (req, res) {
-    let rs = await dbs.execute(`select r.CustomerID customer_id, si.ItemID product_id, max(r.Rate) rating from rate r, sourceofitems si where r.SourceOfItemsID = si.SourceOfItemsID group by r.CustomerID, r.sourceofitemsid `, []);
-    let userToRecommend = await dbs.execute(`SELECT distinct CustomerID customer_id FROM rate where CustomerID = ?`, [req.params.customerid]);
+    let rs = await dbs.execute(`select r.CustomerID customer_id, si.ItemID product_id, max(r.Rate) rating from rate r, sourceofitems si where r.SourceOfItemsID = si.SourceOfItemsID group by r.CustomerID, r.sourceofitemsid order by r.CustomerID, si.ItemID`, []);
+    let userToRecommend = await dbs.execute(`SELECT distinct CustomerID customer_id FROM rate where CustomerID = ? `, [req.params.customerid]);
     let rsRecommend = [];    
     if (userToRecommend.length) {
         var groups = {};
@@ -17,20 +17,28 @@ router.get('/recommend/:customerid', async function (req, res) {
             groups[groupName][rs[i].product_id] = rs[i].rating
         }
         let recommend = [];
-        userToRecommend.forEach(element => {
-            item = recommendation_eng(groups, element.customer_id, euclidean_score);
+        // userToRecommend.forEach(element => {
+            item = recommendation_eng(groups, req.params.customerid, euclidean_score);
+            
             item[0].forEach(i => {
                 recommend.push({ item: i.items, val: Math.round(i.val) })
             })
-        });
-        recommend.sort((a, b) => (a.val < b.val) ? 1 : -1);
+        // });
+        // recommend.sort((a, b) => (a.val < b.val) ? 1 : -1);
         let bind = [];
         recommend.forEach(e => {
             bind.push(`${e.item}`)
         });
-        rsRecommend = await dbs.execute(`select it.ItemName, s.Summary,i.defaultprice, s.Price, s.SourceOfItemsID, i.id, s.ItemID, i.ItemImage Image, i.Description, (select prm.Promotiontypeid from promotion prm where prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotionconditionid from promotion prm where prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from sourceofitems s, itempartner i, items it  where s.ItemID = i.id and i.itemid = it.ItemID and i.id in ( ? ) and s.EndTime >= now() limit 5  `, [bind.toString()]);        
+        if(bind.length){
+            rsRecommend = await dbs.execute(`select it.ItemName, s.Summary,i.defaultprice, s.Price, s.SourceOfItemsID, i.id, s.ItemID, i.ItemImage Image, i.Description, (select prm.Promotiontypeid from promotion prm where prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as typeid, (select prmt.PromotiontypeName from promotion prm, promotiontype prmt where prm.Promotiontypeid = prmt.PromotionTypeID and prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as typename, (select prm.Promotionconditionid from promotion prm where prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionid, (select prmc.ConditionName from promotion prm, promotioncondition prmc where prm.Promotionconditionid = prmc.ConditionID and prm.partnerID = i.partnerID and prm.StartTime <= now() and prm.EndTime >= now()) as conditionname from sourceofitems s, itempartner i, items it  where s.ItemID = i.id and i.itemid = it.ItemID and i.id in ( ? ) and s.EndTime >= now() limit 5  `, [bind]);  
+        }else {
+            rsRecommend= []
+            // rsRecommend = await dbs.execute(`select it.ItemName, s.Summary, s.Price, s.SourceOfItemsID, i.id, s.ItemID, i.ItemImage Image, i.defaultprice, i.Description  from sourceofitems s, itempartner i, items it  where s.ItemID = i.id and i.itemid = it.ItemID and s.EndTime >= now() limit 5  `, []);
+        }
+       
     } else {
-        rsRecommend = await dbs.execute(`select it.ItemName, s.Summary, s.Price, s.SourceOfItemsID, i.id, s.ItemID, i.ItemImage Image, i.defaultprice, i.Description  from sourceofitems s, itempartner i, items it  where s.ItemID = i.id and i.itemid = it.ItemID and s.EndTime >= now() limit 5  `, []);
+        rsRecommend= []
+        // rsRecommend = await dbs.execute(`select it.ItemName, s.Summary, s.Price, s.SourceOfItemsID, i.id, s.ItemID, i.ItemImage Image, i.defaultprice, i.Description  from sourceofitems s, itempartner i, items it  where s.ItemID = i.id and i.itemid = it.ItemID and s.EndTime >= now() limit 5  `, []);
     }
     res.json(rsRecommend);
 });
