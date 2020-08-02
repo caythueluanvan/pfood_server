@@ -180,7 +180,7 @@ module.exports = (router) => {
         }
         sql = sql + ' limit ' + req.params.limit + ' offset ' + req.params.offset;
 
-        // console.log(sql)
+        console.log(sql)
         let rs = await dbs.execute(sql);
         res.json(rs)
     });
