@@ -133,7 +133,7 @@ module.exports = (router) => {
             if(rs3[0].CountReject == rs100[0].ParamValue){
                 let sql2 = 'update customer set LockStartTime  = now() where CustomerID in (select CustomerID from `order` where orderid = "'+req.params.order_id+'")'
                 dbs.execute(sql2);
-                res.json({status:logout, message: "huy thanh cong"})
+                res.json({status:true, message: "huy thanh cong"})
             }else{
                 res.json({status:true, message: "huy thanh cong"})
             }
