@@ -57,7 +57,8 @@ router.post('/signin', async function (req, res) {
     let user = await dbs.execute('select * from customer where CustomerPhone = ?', [phone]);
     
     if (user[0]) {
-      if (user[0].CountReject >= 5) {
+      let rejectmax = await dbs.execute(`select paramvalue from parameters where paramname = 'reject_max'`, []);
+      if (user[0].CountReject >= rejectmax[0].paramvalue) {
         
         let locktime = await dbs.execute(`select paramvalue from parameters where paramname = 'lock_time'`, []);
         let fromReject = new Date(user[0].LockStartTime);
